@@ -11,13 +11,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const HUBSPOT_PAT = process.env.HUBSPOT_PAT;
-// Dev API key for the local Docker instance (tim@apple.dev workspace)
-const TWENTY_API_KEY = process.env.TWENTY_API_KEY ??
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMDIwMjAyMC0xYzI1LTRkMDItYmYyNS02YWVjY2Y3ZWE0MTkiLCJ0eXBlIjoiQVBJX0tFWSIsIndvcmtzcGFjZUlkIjoiMjAyMDIwMjAtMWMyNS00ZDAyLWJmMjUtNmFlY2NmN2VhNDE5IiwiaWF0IjoxNzM1Njg5NjAwLCJleHAiOjQ4OTE0NDk2MDAsImp0aSI6IjIwMjAyMDIwLWY0MDEtNGQ4YS1hNzMxLTY0ZDAwN2MyN2JhZCJ9.bfQjfyN0NEtTCLE_xPyNcwonDzlSXFoP8kdCQTdnuDc';
+const TWENTY_API_KEY = process.env.TWENTY_API_KEY;
 const TWENTY_API_URL = process.env.TWENTY_API_URL ?? 'http://localhost:2020';
 
 if (!HUBSPOT_PAT) {
   console.error('Error: HUBSPOT_PAT is not set. Run: export HUBSPOT_PAT=pat-na1-...');
+  process.exit(1);
+}
+
+if (!TWENTY_API_KEY) {
+  console.error('Error: TWENTY_API_KEY is not set. Run: export TWENTY_API_KEY=<api-key>');
+  console.error('For local Docker: use the dev API key from Settings → API in your workspace.');
   process.exit(1);
 }
 
