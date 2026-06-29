@@ -1,0 +1,80 @@
+import { defineView, ViewType } from 'twenty-sdk/define';
+import {
+  DEAL_AMOUNT_FIELD_UID,
+  DEAL_CLOSE_DATE_FIELD_UID,
+  DEAL_DESCRIPTION_FIELD_UID,
+  DEAL_NAME_FIELD_UID,
+  DEAL_STAGE_FIELD_UID,
+  DEAL_TYPE_FIELD_UID,
+  HS_DEALS_TABLE_VIEW_UID,
+  HS_PARTNER_DEAL_OBJECT_UID,
+  PRIMARY_COMPANY_ON_DEAL_UID,
+  PRIMARY_CONTACT_ON_DEAL_UID,
+} from 'src/constants/universal-identifiers';
+
+export default defineView({
+  universalIdentifier: HS_DEALS_TABLE_VIEW_UID,
+  name: 'All Deals',
+  objectUniversalIdentifier: HS_PARTNER_DEAL_OBJECT_UID,
+  type: ViewType.TABLE,
+  icon: 'IconTable',
+  position: 1,
+  fields: [
+    {
+      universalIdentifier: 'f688793e-98f0-43d9-a876-8e403caa0fae',
+      fieldMetadataUniversalIdentifier: DEAL_NAME_FIELD_UID,
+      position: 0,
+      isVisible: true,
+      size: 220,
+    },
+    {
+      universalIdentifier: 'facb5d6e-adb7-40e1-ae79-ff895d334038',
+      fieldMetadataUniversalIdentifier: DEAL_STAGE_FIELD_UID,
+      position: 1,
+      isVisible: true,
+      size: 180,
+    },
+    {
+      universalIdentifier: 'd94c0ce0-3ad0-4698-ae02-8266c75fe4e8',
+      fieldMetadataUniversalIdentifier: DEAL_AMOUNT_FIELD_UID,
+      position: 2,
+      isVisible: true,
+      size: 130,
+    },
+    {
+      universalIdentifier: '4586d8e5-44c7-41ad-9d03-b7adf5545dba',
+      fieldMetadataUniversalIdentifier: PRIMARY_COMPANY_ON_DEAL_UID,
+      position: 3,
+      isVisible: true,
+      size: 180,
+    },
+    {
+      universalIdentifier: '3acaaea9-94cc-47a3-8f0c-cb9d822b6151',
+      fieldMetadataUniversalIdentifier: PRIMARY_CONTACT_ON_DEAL_UID,
+      position: 4,
+      isVisible: true,
+      size: 160,
+    },
+    {
+      universalIdentifier: '8966cbb7-fcee-4f5a-8690-5ea615e61e23',
+      fieldMetadataUniversalIdentifier: DEAL_CLOSE_DATE_FIELD_UID,
+      position: 5,
+      isVisible: true,
+      size: 130,
+    },
+    {
+      universalIdentifier: '5fb0743f-1c0c-4384-b1f7-20bd18fb48b1',
+      fieldMetadataUniversalIdentifier: DEAL_TYPE_FIELD_UID,
+      position: 6,
+      isVisible: true,
+      size: 160,
+    },
+    {
+      universalIdentifier: 'c192513c-2436-4acf-b078-c4c12c3fa2da',
+      fieldMetadataUniversalIdentifier: DEAL_DESCRIPTION_FIELD_UID,
+      position: 7,
+      isVisible: false,
+      size: 200,
+    },
+  ],
+});
