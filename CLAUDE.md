@@ -222,3 +222,6 @@ This handles everything: starts Postgres + Redis (auto-detects local services vs
 - `tsconfig.base.json` - Base TypeScript configuration
 - `package.json` - Root package with workspace definitions
 - `.cursor/rules/` - Detailed development guidelines and best practices
+
+## Active Plan & Memory
+- Session plan: `.claude/PLAN.md` (gitignored)
