@@ -1,0 +1,4 @@
+node_modules/
+.twenty/
+package-lock.json
+scripts/hubspot-schema.json
