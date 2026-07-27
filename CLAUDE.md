@@ -223,5 +223,20 @@ This handles everything: starts Postgres + Redis (auto-detects local services vs
 - `package.json` - Root package with workspace definitions
 - `.cursor/rules/` - Detailed development guidelines and best practices
 
+## FundThrough Apps — Workspace Isolation (MANDATORY)
+
+Two independent apps under `packages/twenty-apps/`, each bound to exactly ONE cloud workspace:
+
+| App | Source system | Cloud workspace | Key env var |
+|---|---|---|---|
+| `ft-salesforce` | Salesforce | Sales — fundthrough.twenty.com (workspaceId `3ae378c2-…5501`) | `TWENTY_BO_API_KEY` |
+| `hubspot-partner` | HubSpot | Partner — fundthrough-uz0tn18a.twenty.com (workspaceId `1d129a03-…8a05`) | `TWENTY_PARTNER_KEY` |
+
+**Never sync, import, or modify across this boundary.** Before any cloud operation: decode the
+API key's JWT `workspaceId` claim and verify it matches the app; check the CLI remote in
+`~/.twenty/config.json` (the `QUARANTINED-*` remote must never be synced). Reading the other
+app's source for SDK patterns is fine — touching its workspace is not. HubSpot data/metadata in
+the sales workspace is contamination to remove, never a data source. See AGENTS.md for details.
+
 ## Active Plan & Memory
 - Session plan: `.claude/PLAN.md` (gitignored)
