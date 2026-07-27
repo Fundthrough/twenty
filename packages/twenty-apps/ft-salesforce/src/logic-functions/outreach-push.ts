@@ -33,6 +33,33 @@ const outreachFetch = async (path: string, init?: RequestInit) => {
   return { status: res.status, json };
 };
 
+const OUTREACH_ERROR_HINTS: Record<string, string> = {
+  is_using_excluded_email_address:
+    'Outreach rejected this email because it is on the exclusion list (internal or blocked domain). Use the prospect\'s real external work email, then run Push to Outreach again.',
+  taken: 'A prospect with this email already exists in Outreach but is not visible to the integration. Ask your CRM admin to check for a duplicate or archived prospect.',
+};
+
+const describeOutreachError = (status: number, errors: unknown): string => {
+  const list = Array.isArray(errors) ? (errors as Array<Record<string, unknown>>) : [];
+  const hinted = list
+    .map((e) => OUTREACH_ERROR_HINTS[String(e.code ?? '')])
+    .find((hint) => isNonEmptyText(hint));
+
+  if (isNonEmptyText(hinted)) return hinted;
+
+  const detail = list
+    .map((e) => String(e.detail ?? e.title ?? ''))
+    .filter(isNonEmptyText)
+    .join('; ');
+
+  return isNonEmptyText(detail)
+    ? `Outreach rejected the prospect (${status}): ${detail.slice(0, 200)}`
+    : `Outreach rejected the prospect (${status}). Contact your CRM admin.`;
+};
+
+const isNonEmptyText = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
 const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Response> => {
   const expected = process.env.OUTREACH_PUSH_TOKEN;
   if (!expected) return jsonResponse({ error: 'OUTREACH_PUSH_TOKEN app variable not set' }, 500);
@@ -84,11 +111,11 @@ const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Resp
   const person = found.person;
   if (!person?.id) return jsonResponse({ error: 'Person not found' }, 404);
   const email = person.emails?.primaryEmail?.trim().toLowerCase();
-  if (!email) return jsonResponse({ error: 'Person has no email — set one before pushing to Outreach' }, 422);
+  if (!email) return jsonResponse({ error: 'This person has no email address. Add one in Twenty, then run Push to Outreach again.' });
   // no company → no pipeline rollup AND Outreach would auto-create a junk account from
   // the email domain (e.g. gmail.com) — enforce the sales-guide rule instead
   if (!person.company?.id) {
-    return jsonResponse({ error: 'Person has no company — link a company before pushing to Outreach' }, 422);
+    return jsonResponse({ error: 'This person has no company. Link a company in Twenty, then run Push to Outreach again.' });
   }
 
   // ---- applicable prospect fields from the Twenty person + related company ----
@@ -208,9 +235,9 @@ const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Resp
         },
       }),
     });
-    if (create.status === 403) return jsonResponse({ error: 'Outreach token lacks prospect write scope — re-consent needed' });
+    if (create.status === 403) return jsonResponse({ error: 'Outreach token lacks prospect write scope - ask your CRM admin to re-authorize the integration' });
     if (create.status !== 201) {
-      return jsonResponse({ error: `Outreach create failed (${create.status}): ${JSON.stringify(create.json?.errors ?? '').slice(0, 200)}` });
+      return jsonResponse({ error: describeOutreachError(create.status, create.json?.errors) });
     }
     prospectId = String((create.json?.data as { id: number }).id);
     created = true;
@@ -223,7 +250,7 @@ const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Resp
         id: person.id,
         data: {
           outreachProspectId: prospectId,
-          outreachUrl: { primaryLinkUrl: prospectUrl, primaryLinkLabel: 'Outreach prospect' },
+          outreachUrl: { primaryLinkUrl: prospectUrl, primaryLinkLabel: `Prospect ${prospectId}` },
         },
       },
       id: true,

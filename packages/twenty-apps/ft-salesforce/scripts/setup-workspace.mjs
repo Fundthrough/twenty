@@ -45,7 +45,7 @@ const views = (await gql('{ getViews { id name objectMetadataId } }')).data.getV
 // ---- 1. record-page viewFields + field groups ----
 const PLANS = [
   { obj: 'company', group: 'Client Details', priority: ['leadStatus', 'companyId', 'clientId', 'applicationStatus', 'sfOwnerEmail', 'lifecycleStage', 'clientType', 'industry', 'leadSource', 'referringPartner', 'primaryPartnerAffiliation', 'desiredFundingAmount', 'accountingSoftware', 'source'] },
-  { obj: 'person', group: 'Lead Details', priority: ['sfOwnerEmail', 'sfLeadId', 'sfContactId'],
+  { obj: 'person', group: 'Lead Details', priority: ['outreachUrl', 'outreachProspectId', 'outreachSequence', 'outreachLastEvent', 'outreachLastEventAt', 'sfOwnerEmail', 'sfLeadId', 'sfContactId'],
     // company-centric model (2026-07-22): pipeline/business/attribution moved to company —
     // hide the legacy person copies (data kept as audit trail)
     hide: ['leadStatus', 'lifecycleStage', 'clientType', 'companyName', 'accountingSoftware', 'invoicePlatforms', 'invoicePlatformsOther', 'doYouInvoiceBusinesses', 'annualRevenueBand', 'desiredFundingAmount', 'desiredFundingBand', 'primaryReasonForFunding', 'primaryReasonForFundingOther', 'howQuicklyDoYouNeedTheMoney', 'businessRegisteredIn', 'accountNotes', 'leadSource', 'howDidYouHearAboutUs', 'howDidYouHearAboutUsOther', 'partnerSource', 'partnerAgentId', 'primaryPartnerAffiliation', 'promoCode', 'hotList', 'disqualifiedReason', 'disqualifiedReasonOther', 'lostReason', 'lostReasonsOther', 'renurtureDate', 'renurtureReason', 'renurtureReasonOther', 'industry', 'website'] },

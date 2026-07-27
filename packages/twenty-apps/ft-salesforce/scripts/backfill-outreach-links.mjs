@@ -72,7 +72,7 @@ for (;;) {
       `mutation U($id: UUID!, $data: PersonUpdateInput!) { updatePerson(id: $id, data: $data) { id } }`,
       { id: node.id, data: {
         outreachProspectId: prospectId,
-        outreachUrl: { primaryLinkUrl: `https://web.outreach.io/prospects/${prospectId}/overview`, primaryLinkLabel: 'Outreach prospect' },
+        outreachUrl: { primaryLinkUrl: `https://web.outreach.io/prospects/${prospectId}/overview`, primaryLinkLabel: `Prospect ${prospectId}` },
       } },
     );
     if (u?.data?.updatePerson) linked++;
