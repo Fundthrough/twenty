@@ -149,7 +149,9 @@ const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Resp
   let prospectId: string | undefined;
   let created = false;
   const search = await outreachFetch(`/prospects?filter[emails]=${encodeURIComponent(email)}&page[limit]=1`);
-  if (search.status === 401) return jsonResponse({ error: 'Outreach token expired — run scripts/setup-outreach.mjs' }, 502);
+  // NOTE: never return 5xx here — Cloudflare replaces 5xx bodies with its own error page.
+  // 200 + {error} keeps the message readable; the workflow code-step still fails the run.
+  if (search.status === 401) return jsonResponse({ error: 'Outreach token expired — run scripts/setup-outreach.mjs (refresh cadence)' });
   const hits = (search.json?.data ?? []) as Array<{ id: number; attributes?: Record<string, unknown> }>;
   if (hits.length > 0) {
     prospectId = String(hits[0].id);
@@ -206,9 +208,9 @@ const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Resp
         },
       }),
     });
-    if (create.status === 403) return jsonResponse({ error: 'Outreach token lacks prospects.all scope — re-consent needed' }, 502);
+    if (create.status === 403) return jsonResponse({ error: 'Outreach token lacks prospect write scope — re-consent needed' });
     if (create.status !== 201) {
-      return jsonResponse({ error: `Outreach create failed (${create.status}): ${JSON.stringify(create.json?.errors ?? '').slice(0, 200)}` }, 502);
+      return jsonResponse({ error: `Outreach create failed (${create.status}): ${JSON.stringify(create.json?.errors ?? '').slice(0, 200)}` });
     }
     prospectId = String((create.json?.data as { id: number }).id);
     created = true;
