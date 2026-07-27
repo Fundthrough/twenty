@@ -85,6 +85,11 @@ const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Resp
   if (!person?.id) return jsonResponse({ error: 'Person not found' }, 404);
   const email = person.emails?.primaryEmail?.trim().toLowerCase();
   if (!email) return jsonResponse({ error: 'Person has no email — set one before pushing to Outreach' }, 422);
+  // no company → no pipeline rollup AND Outreach would auto-create a junk account from
+  // the email domain (e.g. gmail.com) — enforce the sales-guide rule instead
+  if (!person.company?.id) {
+    return jsonResponse({ error: 'Person has no company — link a company before pushing to Outreach' }, 422);
+  }
 
   // ---- applicable prospect fields from the Twenty person + related company ----
   const titleCase = (v: string) => v.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
