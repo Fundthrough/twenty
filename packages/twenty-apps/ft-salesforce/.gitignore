@@ -1,0 +1,11 @@
+# credentials / env / local state — never commit
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# SDK build output + local certs live under .twenty/
+.twenty/
+
+node_modules/

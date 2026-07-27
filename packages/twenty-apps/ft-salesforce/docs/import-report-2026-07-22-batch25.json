@@ -1,0 +1,34 @@
+{
+  "startedAt": "2026-07-22T21:46:57.088Z",
+  "dryRun": false,
+  "batchLimit": 25,
+  "companies": {
+    "created": 0,
+    "updated": 25,
+    "failed": 0
+  },
+  "people": {
+    "created": 0,
+    "updated": 50,
+    "failed": 0,
+    "linkedToCompany": 50
+  },
+  "tasks": {
+    "created": 0,
+    "skippedExisting": 0,
+    "failed": 0,
+    "scoped": 0
+  },
+  "junkExcluded": [],
+  "errors": [],
+  "spawnedCompanies": {
+    "created": 0,
+    "failed": 0,
+    "leadsWithoutCompanyName": 0
+  },
+  "materializedContacts": {
+    "created": 0,
+    "skipped": 25
+  },
+  "finishedAt": "2026-07-22T21:48:14.210Z"
+}

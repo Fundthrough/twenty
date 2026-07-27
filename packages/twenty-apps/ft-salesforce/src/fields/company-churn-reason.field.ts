@@ -1,0 +1,31 @@
+import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
+
+export default defineField({
+  universalIdentifier: '9e290695-507c-414f-8274-adc92a8c8500',
+  objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
+  type: FieldType.SELECT,
+  name: 'churnReason',
+  label: "Churn Reason",
+  description: "Imported: Account.Churn_Reason__c",
+  icon: 'IconList',
+  options: [
+    { id: '5459ccdb-fc90-4102-9521-99c8b7eef794', value: 'COMPANY_WENT_BANKRUPT', label: "Company went bankrupt", position: 0, color: 'blue' },
+    { id: 'b6d65d54-0d27-4db1-97e4-e0545f9eed1d', value: 'DISQUALIFIED', label: "Disqualified", position: 1, color: 'green' },
+    { id: '6e0ee01c-8720-4674-87e4-9a90180e79d8', value: 'DISQUALIFIED_FOR_EXPRESS_REINSTATEMENT', label: "Disqualified for Express reinstatement", position: 2, color: 'turquoise' },
+    { id: '3d8d436d-bd7e-4379-b098-d9ce419e325a', value: 'DISSATISFIED_WITH_FUNDTHROUGH_S_PRODUCT_AND_OR_SERVICE', label: "Dissatisfied with FundThrough's product and/or service", position: 3, color: 'yellow' },
+    { id: '218ff25f-4e31-4da7-a22b-71b9462a98c0', value: 'DUPLICATE_ACCOUNT', label: "Duplicate account", position: 4, color: 'orange' },
+    { id: 'd22a00e9-b382-4729-8e8a-d0bc7f1581cb', value: 'GRADUATED_DON_T_NEED_FT_ANYMORE', label: "Graduated (don't need FT anymore)", position: 5, color: 'red' },
+    { id: '68e42791-20f4-4f9a-88d7-5dba01300280', value: 'LIEN_ISSUES', label: "Lien Issues", position: 6, color: 'purple' },
+    { id: '78d341d0-3198-4139-a784-d1f95139b998', value: 'PAYOR_ISSUE', label: "Payor issue", position: 7, color: 'pink' },
+    { id: '03234c2a-b9ba-4bd8-83de-f8c4afe81976', value: 'SENT_TO_COLLECTIONS', label: "Sent to collections", position: 8, color: 'sky' },
+    { id: '0a1ad48e-f963-4287-b5aa-be8b4d565a57', value: 'SOLD_CLOSED_BUSINESS', label: "Sold/Closed Business", position: 9, color: 'gray' },
+    { id: '6ae208fa-d6af-4bb4-8751-8bca4f6eee8d', value: 'SWITCHED_TO_ANOTHER_FACTORING_COMPANY', label: "Switched to another factoring company", position: 10, color: 'blue' },
+    { id: 'ad559c18-41af-4bc4-a29d-bd701df6f8e8', value: 'SWITCHED_TO_TRADITIONAL_BANKS', label: "Switched to traditional banks", position: 11, color: 'green' },
+    { id: '4f2beff8-e09a-4315-afa6-ebf2c831cd5e', value: 'TAX_BALANCE', label: "Tax Balance", position: 12, color: 'turquoise' },
+    { id: 'cede05b1-97a0-4627-940f-f45e253a4ee0', value: 'PRICE_INCREASE', label: "Price increase", position: 13, color: 'yellow' },
+    { id: 'ec7acf49-e360-4c5e-87d6-29593743f46d', value: 'PRICING', label: "Pricing", position: 14, color: 'orange' },
+    { id: 'b46e99c7-5410-4f55-a342-800842be6cdb', value: 'TAX_BLOCKER', label: "Tax Blocker", position: 15, color: 'red' },
+  ],
+  isNullable: true,
+  defaultValue: null,
+});

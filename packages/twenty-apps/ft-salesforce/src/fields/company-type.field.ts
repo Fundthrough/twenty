@@ -1,0 +1,33 @@
+import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
+
+export default defineField({
+  universalIdentifier: '0bc28a8a-1703-42a0-be72-c81d688724f4',
+  objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
+  type: FieldType.SELECT,
+  name: 'accountType',
+  label: "Account Type",
+  description: "Imported: Account.Type",
+  icon: 'IconList',
+  options: [
+    { id: '0c370baa-ecc1-4b9b-8a89-735b3a2c5d34', value: 'PROSPECT', label: "Prospect", position: 0, color: 'blue' },
+    { id: '81f088d5-304e-4299-821d-ea0b928200b8', value: 'CUSTOMER', label: "Customer", position: 1, color: 'green' },
+    { id: 'e2518116-4667-446f-9097-b8132ad20e7a', value: 'COMPETITOR', label: "Competitor", position: 2, color: 'turquoise' },
+    { id: '16955f2c-c0b0-40c9-979c-a88d8c4458fb', value: 'INVESTOR', label: "Investor", position: 3, color: 'yellow' },
+    { id: 'f392c36f-97ff-4ed4-b9c4-b9004a8cd2f4', value: 'PRESS', label: "Press", position: 4, color: 'orange' },
+    { id: '3e933407-5b82-4f01-bcad-55771f2fa36e', value: 'PARTNER', label: "Partner", position: 5, color: 'red' },
+    { id: '67c8b06c-5f3d-4bde-8e34-aea7e1d66cbe', value: 'OTHER', label: "Other", position: 6, color: 'purple' },
+    { id: 'a033b029-719b-4266-91ec-744618c98cc3', value: 'BROKER', label: "Broker", position: 7, color: 'pink' },
+    { id: '81cf6cac-eb4e-4503-a71c-9d95127e8b99', value: 'PARTNER_INTEGRATED', label: "Partner Integrated", position: 8, color: 'sky' },
+    { id: 'ee09f19d-8342-42bd-a8e3-af46e9d1f94b', value: 'PARTNER_STRATEGIC', label: "Partner Strategic", position: 9, color: 'gray' },
+    { id: '1c699393-2595-4cd4-a7b7-6c670c4b79f4', value: 'PAYOR', label: "Payor", position: 10, color: 'blue' },
+    { id: '277387e6-a553-41ac-8ec2-c3a6eefdd048', value: 'ENVERUS_PAYOR', label: "Enverus Payor", position: 11, color: 'green' },
+    { id: 'f895289d-5d48-4095-8aad-ed322cf4542b', value: 'ACCOUNTANT', label: "Accountant", position: 12, color: 'turquoise' },
+    { id: 'e4737ee2-0ae2-41a1-9a98-300a03dc8285', value: 'FINANCIAL_PARTNER_REFERRAL', label: "Financial Partner Referral", position: 13, color: 'yellow' },
+    { id: '1f84179c-a12f-41de-8c34-7ad3b21dec94', value: 'OLD_PARTNER_LIST', label: "Old partner list", position: 14, color: 'orange' },
+    { id: '6befcefc-4700-475a-a710-b0cf26502276', value: 'PARTNER_MARKETING', label: "Partner Marketing", position: 15, color: 'red' },
+    { id: '313c742c-5d80-4bdb-b837-3bab11c3c776', value: 'PARTNER_EMBEDDED', label: "Partner Embedded", position: 16, color: 'purple' },
+    { id: '2e7c16c3-cda2-4888-89a7-67ac4c935d7f', value: 'PARTNER_MARKETPLACE', label: "Partner Marketplace", position: 17, color: 'pink' },
+  ],
+  isNullable: true,
+  defaultValue: null,
+});

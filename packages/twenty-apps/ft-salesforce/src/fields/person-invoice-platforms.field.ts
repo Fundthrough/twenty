@@ -1,0 +1,30 @@
+import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
+
+export default defineField({
+  universalIdentifier: 'f9014b98-4c84-4f37-b60d-7146024074c0',
+  objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
+  type: FieldType.MULTI_SELECT,
+  name: 'invoicePlatforms',
+  label: "Invoice Platforms",
+  description: "Imported: Lead.Do_you_use_any_of_these_invoice_platform__c",
+  icon: 'IconListCheck',
+  options: [
+    { id: 'a3e4b885-c4e2-475e-9b74-c3e2e4c24c90', value: 'CORTEX', label: "Cortex", position: 0, color: 'blue' },
+    { id: 'b91105bf-3891-4484-9e31-347576866162', value: 'MS_DYNAMICS', label: "MS Dynamics", position: 1, color: 'green' },
+    { id: '46e8145e-728d-4a44-84cd-107e896f9ef1', value: 'NETSUITE', label: "NetSuite", position: 2, color: 'turquoise' },
+    { id: '45d0c704-25c2-4135-87e8-50ed67af412a', value: 'OPENINVOICE', label: "OpenInvoice", position: 3, color: 'yellow' },
+    { id: '7851465f-ba08-4600-b201-fb3ae2502bae', value: 'QUICKBOOKS_ONLINE', label: "Quickbooks Online", position: 4, color: 'orange' },
+    { id: 'b08b97fc-9a15-4944-9a5c-503e7042102a', value: 'QUICKBOOKS_DESKTOP', label: "Quickbooks Desktop", position: 5, color: 'red' },
+    { id: '7d69e3f8-00c0-427c-af93-afecff8d2509', value: 'SAGE', label: "Sage", position: 6, color: 'purple' },
+    { id: 'e0afb27c-0081-40f3-a524-4f74d6e46704', value: 'XERO', label: "Xero", position: 7, color: 'pink' },
+    { id: 'cf67c414-434b-4b5f-90a9-4cd7d656e55b', value: 'OTHER', label: "Other", position: 8, color: 'sky' },
+    { id: 'e036b125-d8d6-4be2-bf53-16f7d63e6389', value: 'NONE_OF_THE_ABOVE', label: "None of the Above", position: 9, color: 'gray' },
+    { id: '60831d51-eee3-4faf-9741-1b5218b4e8b2', value: 'FRESHBOOKS', label: "FreshBooks", position: 10, color: 'blue' },
+    { id: '64e8ae52-cdec-4084-81d3-74734c3256d1', value: 'JOBBER', label: "Jobber", position: 11, color: 'green' },
+    { id: 'ac47558c-d9aa-4d50-9a9d-65cc2f01885b', value: 'ORACLE_NETSUITE', label: "Oracle NetSuite", position: 12, color: 'turquoise' },
+    { id: 'b2ab5924-22fb-48e5-b0c8-c6fc3c9eff84', value: 'MICROSOFT_DYNAMICS', label: "Microsoft Dynamics", position: 13, color: 'yellow' },
+    { id: '84925049-74b9-4b60-b394-08b2228d8216', value: 'SPS_COMMERCE', label: "SPS Commerce", position: 14, color: 'orange' },
+  ],
+  isNullable: true,
+  defaultValue: null,
+});

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flow Company Profile — embed</title>
+    <style>
+      /* transparent body: the embedding page's background shows through below the
+         widget content instead of a white band */
+      html, body { margin: 0; height: 100%; background: transparent; }
+      #flow-company-profile { min-height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div id="flow-company-profile"></div>
+
+    <script src="https://flow.fundthrough.com/bundle.js"></script>
+    <script>
+      var params = new URLSearchParams(window.location.search);
+
+      // ---- Defaults (same values as widget.html); URL params override everything ----
+      var CONFIG = {
+        dashboardId: 'company_profile',
+        apiBaseUrl: params.get('env') === 'staging'
+          ? 'https://task-agents-staging-api.fundthrough.com'
+          : 'https://task-agents-production-api.fundthrough.com',
+        googleClientId: '75310127948-v4crs86h0pno45j36ikmkieeh7hjtk65.apps.googleusercontent.com',
+        enabledTabs: ['Profile', 'Cash Events', 'Customers', 'Invoices', 'Risk', 'Pipefy Cards'],
+        showHeader: true,
+        showTitle: false,
+      };
+      if (params.get('tabs')) {
+        CONFIG.enabledTabs = params.get('tabs').split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+      }
+      if (params.get('header') !== null) CONFIG.showHeader = params.get('header') !== '0';
+      if (params.get('title') !== null) CONFIG.showTitle = params.get('title') === '1';
+      // -------------------------------------------------------------------------------
+
+      // Twenty company id mapping: ?company_id= URL param wins when present (the mode for
+      // the Flow-hosted version of this page). Without it, the page polls a local relay
+      // (scripts/flow-embed-relay.mjs) that Twenty's front component reports the current
+      // record's Company Id to — the local-dev mode.
+      var RELAY = 'http://localhost:5511';
+      var companyIdParam = params.get('company_id');
+      var paramId = /^\d+$/.test(companyIdParam || '') ? Number(companyIdParam) : undefined;
+      var mountedId = null;
+
+      function mount(companyId) {
+        if (companyId === mountedId || !window.FlowWidget) return;
+        mountedId = companyId;
+        window.FlowWidget.init({
+          targetElementId: 'flow-company-profile',
+          dashboardId: CONFIG.dashboardId,
+          dashboardArguments: {
+            // with a company id the profile preloads; otherwise the widget's own search
+            // is enabled so the user can find the company without portal chrome
+            companyId: companyId,
+            allowSearch: companyId === undefined,
+            showTitle: CONFIG.showTitle,
+            showHeader: CONFIG.showHeader,
+            enabledTabs: CONFIG.enabledTabs,
+          },
+          apiBaseUrl: CONFIG.apiBaseUrl || undefined,
+          googleClientId: CONFIG.googleClientId || undefined,
+        });
+      }
+
+      // the relay is local-dev-only infrastructure — when this page is HOSTED (Flow
+      // origin), skip it entirely and mount immediately (search mode unless ?company_id=)
+      var isLocalDev = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+
+      if (paramId !== undefined) {
+        mount(paramId);
+      } else if (!isLocalDev) {
+        mount(undefined); // hosted, no param → widget search, no dead air
+      } else {
+        var poll = function () {
+          fetch(RELAY + '/get')
+            .then(function (r) { return r.json(); })
+            .then(function (s) { if (s && s.companyId) mount(s.companyId); })
+            .catch(function () { /* relay not running — keep polling */ });
+        };
+        poll();
+        setInterval(poll, 1500);
+        // if no id arrives shortly, fall back to the widget's own search
+        setTimeout(function () { if (mountedId === null) mount(undefined); }, 5000);
+      }
+    </script>
+  </body>
+</html>

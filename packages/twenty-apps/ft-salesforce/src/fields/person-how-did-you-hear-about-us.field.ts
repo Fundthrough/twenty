@@ -1,0 +1,33 @@
+import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
+
+export default defineField({
+  universalIdentifier: '9c2fe7e3-a11e-4337-90a2-11e9c3acd413',
+  objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
+  type: FieldType.SELECT,
+  name: 'howDidYouHearAboutUs',
+  label: "How Did You Hear About Us",
+  description: "Imported: Lead.How_Did_You_Hear_About_Us__c",
+  icon: 'IconList',
+  options: [
+    { id: 'e9883c83-4af7-46b1-a475-d2639c835773', value: 'BING', label: "Bing", position: 0, color: 'blue' },
+    { id: '1064b552-0e99-4c1c-8607-503b56f24453', value: 'CHATGPT_OR_OTHER_LLM_AI', label: "ChatGPT or other LLM/AI", position: 1, color: 'green' },
+    { id: '7e8a7523-a2e1-4ac6-a885-9d92c0050e63', value: 'CORTEX', label: "Cortex", position: 2, color: 'turquoise' },
+    { id: '213cd33d-bffb-4640-99f3-08a10bd0782a', value: 'FACEBOOK', label: "Facebook", position: 3, color: 'yellow' },
+    { id: 'f81534b6-7df2-43a9-8e8b-0fa1efa301e3', value: 'GOOGLE', label: "Google", position: 4, color: 'orange' },
+    { id: 'cad94d08-b192-48b5-847b-d9f3419036dd', value: 'INSTAGRAM', label: "Instagram", position: 5, color: 'red' },
+    { id: '51fbc393-c12c-42b2-a3c7-94ca5c63c6e1', value: 'LINKEDIN', label: "LinkedIn", position: 6, color: 'purple' },
+    { id: '9bff1ed2-cc52-49b9-98eb-23a858a1dd9c', value: 'OPENINVOICE', label: "OpenInvoice", position: 7, color: 'pink' },
+    { id: '62f3ca0b-44d5-462e-bbf9-8248f57c606a', value: 'QUICKBOOKS', label: "QuickBooks", position: 8, color: 'sky' },
+    { id: 'f7c26b72-6ad0-4e0b-a922-57505115f71b', value: 'TWITTER', label: "Twitter", position: 9, color: 'gray' },
+    { id: '5cab86b5-f909-49c9-9a3d-56386b2a7ae5', value: 'YOUTUBE', label: "YouTube", position: 10, color: 'blue' },
+    { id: 'b0277bd9-5030-4007-b098-272afc62d467', value: 'OTHER', label: "Other", position: 11, color: 'green' },
+    { id: '8f50697a-52ee-4998-a005-fbc7be1fbd7f', value: 'SAGE', label: "Sage", position: 12, color: 'turquoise' },
+    { id: '1660a03b-33b5-465f-adc7-49d253be531a', value: 'XERO', label: "Xero", position: 13, color: 'yellow' },
+    { id: '06897a36-489f-47f5-b071-6d0a950a3615', value: 'LOOP', label: "Loop", position: 14, color: 'orange' },
+    { id: 'e7453517-25ce-4680-a48a-ab9f316a4a9f', value: 'EMAIL', label: "Email", position: 15, color: 'red' },
+    { id: '7efee430-6dc5-4bc5-a7cd-6c07437b5520', value: 'BLUEVINE', label: "Bluevine", position: 16, color: 'purple' },
+    { id: '9f1efeb2-e7be-44c0-bf71-5920d921d109', value: 'AMPLA', label: "Ampla", position: 17, color: 'orange' },
+  ],
+  isNullable: true,
+  defaultValue: null,
+});

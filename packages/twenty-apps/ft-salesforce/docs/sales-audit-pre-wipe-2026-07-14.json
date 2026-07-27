@@ -1,0 +1,318 @@
+{
+  "at": "3ae378c2-3871-4fff-8c69-b4dff2bd5501",
+  "generated": "pre-wipe manifest",
+  "nonSystemObjects": [
+    {
+      "name": "person",
+      "id": "fbbc0560-938b-403e-a059-bd933a5a4522",
+      "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1",
+      "isActive": true
+    },
+    {
+      "name": "opportunity",
+      "id": "ec144baa-fd9f-4ba0-86b9-562ab06f09fd",
+      "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1",
+      "isActive": true
+    },
+    {
+      "name": "task",
+      "id": "db4b6927-5447-4eb9-abc6-bbe8d13a4e9d",
+      "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1",
+      "isActive": true
+    },
+    {
+      "name": "company",
+      "id": "76e12e4c-b1e3-44b9-b961-4d07830b99e3",
+      "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1",
+      "isActive": true
+    },
+    {
+      "name": "note",
+      "id": "6557fd15-f8ed-47f3-a10c-2d36aae501e8",
+      "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1",
+      "isActive": true
+    },
+    {
+      "name": "workflow",
+      "id": "6344d282-9018-41e1-8c8b-74c511d4b432",
+      "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1",
+      "isActive": true
+    },
+    {
+      "name": "dashboard",
+      "id": "35a5cd6a-acaf-4c4a-8efa-75a9fe1f54c3",
+      "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1",
+      "isActive": true
+    },
+    {
+      "name": "hsPartnerDeal",
+      "id": "258a5b5a-66c0-4f10-8fea-e65c81026fb5",
+      "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56",
+      "isActive": true
+    }
+  ],
+  "frontComponents": [],
+  "suspiciousFields": {
+    "company": [
+      {
+        "name": "hsLifecycleStage",
+        "type": "SELECT",
+        "id": "44144950-16e7-4709-8532-06b5e45a1651",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hsIndustry",
+        "type": "SELECT",
+        "id": "fb947daf-2ffa-4b08-90db-ce358b8b5919",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hsNumberOfEmployees",
+        "type": "NUMBER",
+        "id": "64d749ca-93a6-4b4d-9c56-eb3e3a8aded1",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hsHubspotId",
+        "type": "TEXT",
+        "id": "7354faf9-c36c-4dc3-85b1-6813869db5a4",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hasInvoiceFinancingSolution",
+        "type": "SELECT",
+        "id": "3ab91bfa-7c8d-4eae-bd7e-16327a33af9f",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hsPartnerDeals",
+        "type": "RELATION",
+        "id": "4166a712-9041-49f5-8d08-9e9752126148",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "annualRevenue",
+        "type": "CURRENCY",
+        "id": "e5e9f2ce-464d-4cf4-97d0-19aa8a69ac1e",
+        "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1"
+      },
+      {
+        "name": "sfAccountId",
+        "type": "TEXT",
+        "id": "24227845-2c08-47e5-b244-36b06041f1fc",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "clientStatus",
+        "type": "SELECT",
+        "id": "93c3e989-2604-45f4-9474-024a8483609d",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "accountingSoftware",
+        "type": "TEXT",
+        "id": "14aab97d-a0c0-4359-aa6d-36956ad47008",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "fundingType",
+        "type": "TEXT",
+        "id": "9be34d0a-eafa-4db9-a219-51225c2a51e7",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "numAdvances",
+        "type": "NUMBER",
+        "id": "6f41c7b3-8f10-446e-be04-edb460ee72ce",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "signupDate",
+        "type": "DATE",
+        "id": "9151eaa9-55bc-446d-bf6b-10d784ca604f",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "firstAdvanceDate",
+        "type": "DATE",
+        "id": "7adba7b8-8ad8-4f13-b480-be16dab9e0dd",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "lastAdvanceDate",
+        "type": "DATE",
+        "id": "23c4c57b-e118-40e0-a2f6-52b4f50f54e8",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "proAdminCompany",
+        "type": "TEXT",
+        "id": "22a16896-7cec-44f9-aa84-5b55d6416700",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "testCurrency14345",
+        "type": "CURRENCY",
+        "id": "b0149f33-c18d-4ad1-8108-e9e3f642e3e8",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "totalAdvancedCAD",
+        "type": "CURRENCY",
+        "id": "6da944a4-5f35-4acc-93e7-8bb5e247eff4",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      },
+      {
+        "name": "creditLimit",
+        "type": "CURRENCY",
+        "id": "f67fa197-fafa-435f-a9ce-a4e52ed506a6",
+        "applicationId": "22b80fe4-cfe0-4ee0-8717-b4c2d2081ec7"
+      }
+    ],
+    "person": [
+      {
+        "name": "hsHubspotId",
+        "type": "TEXT",
+        "id": "4cde92df-717e-4d31-8b8b-1883257f16b0",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hsLifecycleStage",
+        "type": "SELECT",
+        "id": "4c723d58-2837-4c8c-b0dc-7f7f30b8bccb",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hsLeadStatus",
+        "type": "SELECT",
+        "id": "629704c7-1240-4edd-b0a7-d6bcfb3abcf4",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      },
+      {
+        "name": "hsPartnerDeals",
+        "type": "RELATION",
+        "id": "5ad77cd1-5b7f-4fad-92f5-01d82234983e",
+        "applicationId": "df2d5a87-a33e-4e7f-99e7-7d4b44dc4e56"
+      }
+    ],
+    "task": [],
+    "note": [],
+    "opportunity": [
+      {
+        "name": "pointOfContact",
+        "type": "RELATION",
+        "id": "09edf844-0d11-4520-bd5e-3c3892a699e6",
+        "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1"
+      },
+      {
+        "name": "owner",
+        "type": "RELATION",
+        "id": "f7f41eb7-df6a-4962-95b7-1f7e1acff0ea",
+        "applicationId": "fa11a3eb-209b-48d3-879a-9697804f74d1"
+      }
+    ]
+  },
+  "views": [
+    "All Call Recordings",
+    "Call Recording Record Page Fields",
+    "Calendar Event Record Page Fields",
+    "Pipeline Board",
+    "All Attachments",
+    "All Blocklists",
+    "Blocklist Record Page Fields",
+    "All Calendar Channel Event Associations",
+    "Calendar Channel Event Association Record Page Fields",
+    "All Calendar events",
+    "All Calendar event participants",
+    "Calendar Event Participant Record Page Fields",
+    "All Companies",
+    "Company Record Page Fields",
+    "All Dashboards",
+    "All Messages",
+    "All Message Channel Message Associations",
+    "Message Channel Message Association Record Page Fields",
+    "All Message Channel Message Association Message Folders",
+    "Message Channel Message Association Message Folder Record Page Fields",
+    "All Message Participants",
+    "Message Participant Record Page Fields",
+    "All Message Threads",
+    "All Notes",
+    "Note Record Page Fields",
+    "All Note Targets",
+    "All Opportunities",
+    "Opportunity Record Page Fields",
+    "All People",
+    "Person Record Page Fields",
+    "All Tasks",
+    "Task Record Page Fields",
+    "All Task Targets",
+    "All Timeline Activities",
+    "All Workflows",
+    "All Workflow Automated Triggers",
+    "Workflow Automated Trigger Record Page Fields",
+    "Runs",
+    "Workflow Run Record Page Fields",
+    "Versions",
+    "Workflow Version Record Page Fields",
+    "All Workspace Members",
+    "All Deals",
+    "By Status",
+    "By Stage",
+    "Assigned to Me",
+    "HS Companies",
+    "HS Contacts"
+  ],
+  "navItems": 13,
+  "workflows": [
+    {
+      "id": "887c6c06-fbc5-4b45-8d6b-f7b6b0f40b12",
+      "name": "Create company when adding a new person",
+      "statuses": [
+        "ACTIVE"
+      ]
+    },
+    {
+      "id": "8b213cac-a68b-4ffe-817a-3ec994e9932d",
+      "name": "Quick Lead",
+      "statuses": [
+        "ACTIVE"
+      ]
+    },
+    {
+      "id": "ad66e129-cff9-40c3-9e32-78dc19830066",
+      "name": "",
+      "statuses": [
+        "DRAFT"
+      ]
+    }
+  ],
+  "pageLayouts": [
+    "Default Call Recording Layout",
+    "My First Dashboard",
+    "Default Blocklist Layout",
+    "Default Calendar Channel Event Association Layout",
+    "Default Calendar Event Participant Layout",
+    "Default Company Layout",
+    "Default Message Channel Message Association Layout",
+    "Default Message Channel Message Association Message Folder Layout",
+    "Default Message Participant Layout",
+    "Default Message Thread Layout",
+    "Default Note Layout",
+    "Default Opportunity Layout",
+    "Default Person Layout",
+    "Default Task Layout",
+    "Default Workflow Layout",
+    "Default Workflow Automated Trigger Layout",
+    "Default Workflow Version Layout",
+    "Default Workflow Run Layout",
+    "Default Calendar Event Layout"
+  ],
+  "recordCounts": {
+    "companies": 301,
+    "people": 528,
+    "tasks": 1,
+    "notes": 0,
+    "opportunities": 16,
+    "companiesWithHsId": 258
+  }
+}

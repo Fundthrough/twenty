@@ -1,0 +1,25 @@
+{
+  "startedAt": "2026-07-22T20:37:09.359Z",
+  "dryRun": true,
+  "batchLimit": null,
+  "companies": {
+    "created": 3422,
+    "updated": 29,
+    "failed": 0
+  },
+  "people": {
+    "created": 7521,
+    "updated": 55,
+    "failed": 0,
+    "linkedToCompany": 29
+  },
+  "tasks": {
+    "created": 11,
+    "skippedExisting": 0,
+    "failed": 0,
+    "scoped": 11
+  },
+  "junkExcluded": [],
+  "errors": [],
+  "finishedAt": "2026-07-22T20:37:38.787Z"
+}

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowWidget — Company Profile embed sample</title>
+
+    <!--
+      Optional: provide the Google OAuth client id here instead of in init().
+      Must match the BFF's GOOGLE_CLIENT_ID. Leave unset to use the value baked
+      into the bundle at build time.
+      <meta name="google-client-id" content="xxxxx.apps.googleusercontent.com" />
+    -->
+
+    <!-- Host-page styles. These intentionally use the same class/utility names a
+         real portal might, to demonstrate the widget's CSS is scoped and does NOT
+         bleed in or out (all widget rules are scoped under .flow-widget-root). -->
+    <style>
+      body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: #1f2933; background: #f4f1ea; }
+      .container { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+      header h1 { font-size: 34px; margin: 0 0 4px; letter-spacing: -0.5px; }
+      header p { margin: 0 0 28px; color: #6b7280; }
+      .card { background: #fff; border: 1px solid #e5e1d8; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow: hidden; }
+      .card > .card-head { padding: 14px 18px; border-bottom: 1px solid #eee; font-weight: 700; }
+      /* The widget mounts here. Give it room; the dashboard manages its own scroll. */
+      #flow-company-profile { min-height: 680px; }
+      footer { margin-top: 24px; color: #9aa0a6; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Acme Partner Portal</h1>
+        <p>Host page — served on a different domain than FundThrough. The panel below is embedded via FlowWidget.</p>
+      </header>
+
+      <div class="card">
+        <div class="card-head">Company Profile</div>
+        <!-- FlowWidget renders the dashboard into this element. -->
+        <div id="flow-company-profile"></div>
+      </div>
+
+      <footer>This heading &amp; card use the host page's own serif styling — unaffected by the embedded widget.</footer>
+    </div>
+
+    <!--
+      Load the bundle. When this page is served from the Flow host, the relative
+      path works. A third-party portal on another domain uses the absolute URL:
+        <script src="https://flow.fundthrough.com/bundle.js"></script>
+    -->
+    <script src="https://flow-staging.fundthrough.com/bundle.js"></script>
+    <script>
+      // ---- Edit these for your environment -------------------------------
+      var CONFIG = {
+        dashboardId: 'company_profile',          // the Company Profile dashboard
+        companyId: 11618,                         // <-- replace with a real FundThrough company id
+        // '' = fall back to the value baked into the bundle (VITE_BFF_API_URL).
+        // For a cross-origin portal, set this to the BFF origin, e.g.
+        // 'https://portal-agents-staging-api.fundthrough.com'.
+        apiBaseUrl: 'https://task-agents-staging-api.fundthrough.com',
+        // '' = fall back to <meta name="google-client-id"> or the baked-in value.
+        googleClientId: '75310127948-v4crs86h0pno45j36ikmkieeh7hjtk65.apps.googleusercontent.com',
+      };
+      // --------------------------------------------------------------------
+
+      window.FlowWidget.init({
+        targetElementId: 'flow-company-profile',
+        dashboardId: CONFIG.dashboardId,
+        // Company Profile resolves companyId -> {id,name,uuid} in its InitApp and
+        // opens directly on that company's detail view.
+        dashboardArguments: {
+          companyId: CONFIG.companyId,
+          allowSearch: false,
+          showTitle: false,
+          showHeader: true,
+          enabledTabs: ['Profile','Invoices','Risk', 'Cash Events', 'Customers', 'Pipefy Cards'],
+        },
+        apiBaseUrl: CONFIG.apiBaseUrl || undefined,
+        googleClientId: CONFIG.googleClientId || undefined,
+      });
+    </script>
+  </body>
+</html>
