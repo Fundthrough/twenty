@@ -31,9 +31,10 @@ const handler = async (event: CampaignEngagementCreatedEvent) => {
   // so the update goes through the raw GraphQL escape hatch
   const gql = async (query: string, variables?: Record<string, unknown>) => {
     const res = await (client as unknown as {
-      executeGraphqlRequestWithOptionalRefresh: (args: { operation: { query: string; variables?: Record<string, unknown> } }) => Promise<{ payload?: { data?: Record<string, unknown> } }>;
+      executeGraphqlRequestWithOptionalRefresh: (args: { operation: { query: string; variables?: Record<string, unknown> } }) => Promise<{ data?: Record<string, unknown>; errors?: unknown }>;
     }).executeGraphqlRequestWithOptionalRefresh({ operation: { query, variables } });
-    return res.payload?.data as Record<string, unknown> | undefined;
+    if (res?.errors) console.log('gql error:', JSON.stringify(res.errors).slice(0, 200));
+    return res?.data as Record<string, unknown> | undefined;
   };
 
   const found = await client.query({

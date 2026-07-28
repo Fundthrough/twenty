@@ -16,7 +16,8 @@ const handler = async () => {
     const res = await (client as unknown as {
       executeGraphqlRequestWithOptionalRefresh: (args: { operation: { query: string; variables?: Record<string, unknown> } }) => Promise<GqlResult>;
     }).executeGraphqlRequestWithOptionalRefresh({ operation: { query, variables } });
-    return res.payload?.data as Record<string, unknown> | undefined;
+    if (res?.errors) console.log('gql error:', JSON.stringify(res.errors).slice(0, 200));
+    return res?.data as Record<string, unknown> | undefined;
   };
 
   const found = await gql(

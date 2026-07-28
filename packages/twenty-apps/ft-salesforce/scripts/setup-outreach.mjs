@@ -103,6 +103,15 @@ await ensureVariable('OUTREACH_WEBHOOK_SECRET', secret, true);
 await ensureVariable('OUTREACH_ACCESS_TOKEN', tokens.access_token, true);
 await ensureVariable('OUTREACH_LOG_ONLY', process.env.OUTREACH_LOG_ONLY ?? '1', false);
 
+// the workspace refreshes its own token; a laptop cron misses every sleep window
+const CLIENT_ID = ENV === 'prod' ? process.env.PROD_OUTREACH_CLIENT_ID : process.env.DEV_OUTREACH_CLIENT_ID;
+const CLIENT_SECRET = ENV === 'prod' ? process.env.PROD_OUTREACH_CLIENT_SECRET : process.env.DEV_OUTREACH_CLIENT_SECRET;
+if (CLIENT_ID && CLIENT_SECRET) {
+  await ensureVariable('OUTREACH_CLIENT_ID', CLIENT_ID, true);
+  await ensureVariable('OUTREACH_CLIENT_SECRET', CLIENT_SECRET, true);
+}
+await ensureVariable('OUTREACH_REFRESH_TOKEN', tokens.refresh_token, true);
+
 // push-button auth token (outreach-push httpRoute) — same local-600-file pattern
 const PUSH_TOKEN_PATH = join(homedir(), `.outreach-push-token-${ENV}`);
 let pushToken;

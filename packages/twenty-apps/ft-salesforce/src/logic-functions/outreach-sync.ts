@@ -1,6 +1,7 @@
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { defineLogicFunction } from 'twenty-sdk/define';
 import { OUTREACH_SYNC_UID } from 'src/constants/universal-identifiers';
+import { refreshOutreachToken } from 'src/utils/outreach-token';
 
 // Polling transport for Outreach -> Twenty (EE-5069). Webhook deliveries are unusable:
 // Outreach POSTs application/vnd.api+json, which Twenty does not body-parse, so the
@@ -23,7 +24,7 @@ type OutreachRow = {
 type PersonRef = { id: string; companyId?: string | null };
 
 const handler = async () => {
-  const token = process.env.OUTREACH_ACCESS_TOKEN;
+  let token = process.env.OUTREACH_ACCESS_TOKEN;
   if (!token) {
     console.log('outreach-sync: OUTREACH_ACCESS_TOKEN not set, skipping');
     return { skipped: 'no token' };
@@ -35,14 +36,23 @@ const handler = async () => {
     const res = await (client as unknown as {
       executeGraphqlRequestWithOptionalRefresh: (args: {
         operation: { query: string; variables?: Record<string, unknown> };
-      }) => Promise<{ payload?: { data?: Record<string, unknown> } }>;
+      }) => Promise<{ data?: Record<string, unknown>; errors?: unknown }>;
     }).executeGraphqlRequestWithOptionalRefresh({ operation: { query, variables } });
-    return res.payload?.data as Record<string, unknown> | undefined;
+    if (res?.errors) {
+      console.log('outreach-sync gql error:', JSON.stringify(res.errors).slice(0, 240));
+    }
+    return res?.data as Record<string, unknown> | undefined;
   };
 
-  const outreach = async (path: string) => {
+  const outreach = async (path: string, retried = false): Promise<{ data?: OutreachRow[] | OutreachRow } | undefined> => {
     const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.status === 401) throw new Error('token expired');
+    if (res.status === 401) {
+      if (retried) throw new Error('token expired and refresh did not help');
+      const fresh = await refreshOutreachToken();
+      if (!fresh) throw new Error('token expired');
+      token = fresh;
+      return outreach(path, true);
+    }
     if (!res.ok) return undefined;
     return (await res.json()) as { data?: OutreachRow[] | OutreachRow };
   };
@@ -175,7 +185,7 @@ const handler = async () => {
         if (newId) {
           await gql(
             `mutation L($data: TaskTargetCreateInput!) { createTaskTarget(data: $data) { id } }`,
-            { data: { taskId: newId, personId: person.id, ...(person.companyId ? { companyId: person.companyId } : {}) } },
+            { data: { taskId: newId, targetPersonId: person.id, ...(person.companyId ? { targetCompanyId: person.companyId } : {}) } },
           );
         }
       }
