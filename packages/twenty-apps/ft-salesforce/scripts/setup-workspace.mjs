@@ -44,8 +44,16 @@ const views = (await gql('{ getViews { id name objectMetadataId } }')).data.getV
 
 // ---- 1. record-page viewFields + field groups ----
 const PLANS = [
-  { obj: 'company', group: 'Client Details', priority: ['leadStatus', 'companyId', 'clientId', 'applicationStatus', 'sfOwnerEmail', 'lifecycleStage', 'clientType', 'industry', 'leadSource', 'referringPartner', 'primaryPartnerAffiliation', 'desiredFundingAmount', 'accountingSoftware', 'source'] },
-  { obj: 'person', group: 'Lead Details', priority: ['outreachUrl', 'outreachProspectId', 'outreachSequence', 'outreachLastEvent', 'outreachLastEventAt', 'sfOwnerEmail', 'sfLeadId', 'sfContactId'],
+  { obj: 'company', group: 'Client Details',
+    // lastActivity* are created through /metadata (the SDK has no morph support) so they carry
+    // the Custom app id rather than ours: list them or isOurs() filters them out
+    extra: ['lastActivityAt', 'lastActivityType', 'lastActivityBy', 'lastActivityItem'],
+    hideForeign: ['lastContactAt', 'lastContactBy', 'lastContactItem'],
+    priority: ['lastActivityAt', 'lastActivityType', 'lastActivityBy', 'lastActivityItem', 'leadStatus', 'companyId', 'clientId', 'applicationStatus', 'sfOwnerEmail', 'lifecycleStage', 'clientType', 'industry', 'leadSource', 'referringPartner', 'primaryPartnerAffiliation', 'desiredFundingAmount', 'accountingSoftware', 'source'] },
+  { obj: 'person', group: 'Lead Details',
+    extra: ['lastActivityAt', 'lastActivityType', 'lastActivityBy', 'lastActivityItem'],
+    hideForeign: ['lastContactAt', 'lastContactBy', 'lastContactItem'],
+    priority: ['lastActivityAt', 'lastActivityType', 'lastActivityBy', 'lastActivityItem', 'outreachUrl', 'outreachProspectId', 'outreachSequence', 'outreachLastEvent', 'outreachLastEventAt', 'sfOwnerEmail', 'sfLeadId', 'sfContactId'],
     // company-centric model (2026-07-22): pipeline/business/attribution moved to company —
     // hide the legacy person copies (data kept as audit trail)
     hide: ['leadStatus', 'lifecycleStage', 'clientType', 'companyName', 'accountingSoftware', 'invoicePlatforms', 'invoicePlatformsOther', 'doYouInvoiceBusinesses', 'annualRevenueBand', 'desiredFundingAmount', 'desiredFundingBand', 'primaryReasonForFunding', 'primaryReasonForFundingOther', 'howQuicklyDoYouNeedTheMoney', 'businessRegisteredIn', 'accountNotes', 'leadSource', 'howDidYouHearAboutUs', 'howDidYouHearAboutUsOther', 'partnerSource', 'partnerAgentId', 'primaryPartnerAffiliation', 'promoCode', 'hotList', 'disqualifiedReason', 'disqualifiedReasonOther', 'lostReason', 'lostReasonsOther', 'renurtureDate', 'renurtureReason', 'renurtureReasonOther', 'industry', 'website'] },
@@ -68,7 +76,10 @@ for (const plan of PLANS) {
   }
 
   const hideSet = new Set(plan.hide ?? []);
-  const customs = obj.fieldsList.filter((f) => isOurs(f) && f.type !== 'RELATION');
+  const extraSet = new Set(plan.extra ?? []);
+  const customs = obj.fieldsList.filter(
+    (f) => extraSet.has(f.name) || (isOurs(f) && f.type !== 'RELATION'),
+  );
   customs.sort((a, b) => ((plan.priority.indexOf(a.name) + 1 || 99) - (plan.priority.indexOf(b.name) + 1 || 99)));
   let pos = 0; let created = 0; let moved = 0; let hidden = 0;
   for (const f of customs) {
@@ -92,6 +103,17 @@ for (const plan of PLANS) {
       if (r?.data?.updateViewField?.id) moved++;
     }
     pos++; await sleep(650);
+  }
+  // the Last contact app owns its fields; hiding them here is view-level only
+  for (const name of plan.hideForeign ?? []) {
+    const field = obj.fieldsList.find((f) => f.name === name);
+    const existing = field ? byField[field.id] : undefined;
+    if (existing && existing.isVisible !== false) {
+      await gql('mutation U($input: UpdateViewFieldInput!) { updateViewField(input: $input) { id } }',
+        { input: { id: existing.id, update: { isVisible: false } } });
+      hidden++;
+      await sleep(650);
+    }
   }
   console.log(`${plan.obj}: group "${plan.group}" — ${created} created, ${moved} grouped, ${hidden} hidden`);
 }

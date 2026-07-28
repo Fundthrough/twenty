@@ -128,6 +128,36 @@ const handler = async (event: DialpadCallEvent) => {
       },
     }) as { people?: { edges?: Array<{ node: { id: string; companyId?: string | null; name?: { firstName?: string; lastName?: string } } }> } };
     person = found.people?.edges?.[0]?.node;
+
+    // SF imports store phone numbers in inconsistent shapes, so fall back to the last ten
+    // digits and only trust it when exactly one person comes back.
+    if (!person) {
+      const last10 = externalNumber.replace(/\D/g, '').slice(-10);
+      const suffixMatch = await client.query({
+        people: {
+          __args: { filter: { phones: { primaryPhoneNumber: { ilike: `%${last10}` } } }, first: 2 },
+          edges: { node: { id: true, companyId: true, name: { firstName: true, lastName: true } } },
+        },
+      }) as { people?: { edges?: Array<{ node: { id: string; companyId?: string | null; name?: { firstName?: string; lastName?: string } } }> } };
+      const hits = suffixMatch.people?.edges ?? [];
+      if (hits.length === 1) person = hits[0].node;
+    }
+  }
+
+  // ---- resolve the internal handler to a workspace member ----
+  const handlerName = event.target?.name;
+  let handledById: string | undefined;
+  if (handlerName) {
+    const members = await client.query({
+      workspaceMembers: {
+        __args: { first: 200 },
+        edges: { node: { id: true, name: { firstName: true, lastName: true } } },
+      },
+    }) as { workspaceMembers?: { edges?: Array<{ node: { id: string; name?: { firstName?: string; lastName?: string } } }> } };
+    const wanted = handlerName.trim().toLowerCase();
+    handledById = (members.workspaceMembers?.edges ?? []).find(
+      (e) => [e.node.name?.firstName, e.node.name?.lastName].filter(Boolean).join(' ').toLowerCase() === wanted,
+    )?.node.id;
   }
   const personName = person ? [person.name?.firstName, person.name?.lastName].filter(Boolean).join(' ') : undefined;
   const who = personName || externalNumber || 'unknown number';
@@ -165,6 +195,7 @@ const handler = async (event: DialpadCallEvent) => {
     durationSeconds,
     externalNumber,
     dialpadUser: event.target?.name ?? event.target?.email,
+    handledById,
     personId: person?.id,
     companyId: person?.companyId ?? undefined,
     recordingUrl: recordingUrl ? { primaryLinkLabel: 'Recording', primaryLinkUrl: recordingUrl } : undefined,
@@ -174,6 +205,7 @@ const handler = async (event: DialpadCallEvent) => {
   // a queue/call-center leg must never overwrite the answering user's name on an existing record
   if (existingCall && event.target?.type && event.target.type !== 'user') {
     delete data.dialpadUser;
+    delete data.handledById;
   }
   for (const key of Object.keys(data)) {
     if (data[key] === undefined || data[key] === null || data[key] === '') delete data[key];
@@ -190,6 +222,33 @@ const handler = async (event: DialpadCallEvent) => {
       createCall: { __args: { data }, id: true },
     }) as { createCall?: { id?: string } };
     callId = created.createCall?.id;
+  }
+
+  // ---- last activity: calls and SMS count as a touch, alongside email and meetings ----
+  if (person && callId) {
+    const startedAt = (data.startedAt as string | undefined) ?? new Date().toISOString();
+    const activity: Record<string, unknown> = {
+      lastActivityAt: startedAt,
+      lastActivityType: keptOutcome === 'SMS' ? 'SMS' : 'CALL',
+      lastActivityItemCallId: callId,
+    };
+    if (handledById) activity.lastActivityById = handledById;
+
+    const current = await client.query({
+      person: { __args: { filter: { id: { eq: person.id } } }, lastActivityAt: true },
+    }) as { person?: { lastActivityAt?: string | null } };
+    if (!current.person?.lastActivityAt || new Date(startedAt) >= new Date(current.person.lastActivityAt)) {
+      await client.mutation({ updatePerson: { __args: { id: person.id, data: activity }, id: true } });
+    }
+
+    if (person.companyId) {
+      const currentCompany = await client.query({
+        company: { __args: { filter: { id: { eq: person.companyId } } }, lastActivityAt: true },
+      }) as { company?: { lastActivityAt?: string | null } };
+      if (!currentCompany.company?.lastActivityAt || new Date(startedAt) >= new Date(currentCompany.company.lastActivityAt)) {
+        await client.mutation({ updateCompany: { __args: { id: person.companyId, data: activity }, id: true } });
+      }
+    }
   }
 
   // ---- unmatched → ONE open review task per number (view: "Dialpad — Unmatched") ----
@@ -210,6 +269,7 @@ const handler = async (event: DialpadCallEvent) => {
             data: {
               title: taskTitle,
               status: 'TODO',
+              ...(handledById ? { assigneeId: handledById } : {}),
               bodyV2: {
                 markdown: `Dialpad logged ${keptOutcome === 'SMS' ? `an ${direction.toLowerCase()} SMS` : `a ${keptOutcome.toLowerCase()} ${direction.toLowerCase()} call`} from an unknown number.\n\n- Number: ${externalNumber}\n- Handled by: ${event.target?.name ?? 'unknown'}\n- When: ${toIso(event.date_started) ?? toIso(event.created_date) ?? 'unknown'}${event.voicemail_link ? `\n- Voicemail: ${event.voicemail_link}` : ''}\n\nMatch or create the Person, then link the Call record and close this task.`,
               },

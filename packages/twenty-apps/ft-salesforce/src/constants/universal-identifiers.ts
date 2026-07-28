@@ -108,3 +108,4 @@ export const OUTREACH_WEBHOOK_UID = 'c77f6ccf-c9c0-42b2-8875-970643187fab';
 export const PROCESS_OUTREACH_EVENT_UID = '978ed3bb-d214-4dc2-a615-8bfba75982a0';
 export const OUTREACH_SYNC_UID = '87bb8a0e-cede-4f8c-aaed-f1af5c252d67';
 export const OUTREACH_PUSH_UID = 'ec790d8d-c7fd-46b9-8356-a4e949f0ea99';
+export const LAST_ACTIVITY_SWEEP_UID = '53ac7556-9c36-4bcb-b106-a62b9a986560';
