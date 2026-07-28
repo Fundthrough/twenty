@@ -98,6 +98,20 @@ async function gql(query, variables, attempt = 1) {
 
 const valueMaps = JSON.parse(readFileSync(join(APP, 'scripts/value-maps.json'), 'utf8'));
 const mapSel = (obj, field, label) => (label ? valueMaps[obj]?.[field]?.[String(label).trim()] : undefined);
+// NAICS 2017 sector, inferred. Credit's 4-digit code is the better source when its leading pair
+// is a real sector, so it wins; otherwise fall back to the industry label. A third of credit's
+// codes are SIC or junk (7373, 1234), which is exactly why only the 2-digit level is stored.
+const NAICS_SECTORS = { '11':'NAICS_11','21':'NAICS_21','22':'NAICS_22','23':'NAICS_23',
+  '31':'NAICS_31_33','32':'NAICS_31_33','33':'NAICS_31_33','42':'NAICS_42','44':'NAICS_44_45','45':'NAICS_44_45',
+  '48':'NAICS_48_49','49':'NAICS_48_49','51':'NAICS_51','52':'NAICS_52','53':'NAICS_53','54':'NAICS_54',
+  '55':'NAICS_55','56':'NAICS_56','61':'NAICS_61','62':'NAICS_62','71':'NAICS_71','72':'NAICS_72',
+  '81':'NAICS_81','92':'NAICS_92' };
+const naicsSector = (creditCode, industryLabel) => {
+  const digits = /(\d{2,6})\s*$/.exec(String(creditCode ?? '').trim());
+  const fromCode = digits ? NAICS_SECTORS[digits[1].slice(0, 2)] : undefined;
+  if (fromCode) return fromCode;
+  return industryLabel ? valueMaps.naicsSector?.[String(industryLabel).trim()] : undefined;
+};
 const errStr = (r) => String(JSON.stringify(r?.errors ?? r) ?? 'no-response').slice(0, 200);
 const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 const normPhone = (raw) => {
@@ -144,7 +158,7 @@ console.log('Pulling Salesforce…');
 // unconverted leads from the last 180 days. IMPORT_SCOPE=full reverts to everything-with-PRO-id.
 const FULL = process.env.IMPORT_SCOPE === 'full';
 const CLIENT_WHERE = FULL ? "PRO_Company_ID__c != null" : "Application_Status__c = 'Funded'";
-const clientsAll = await soql(`SELECT Id, Name, Company_Name__c, PRO_Company_ID__c, Client_ID__c, Application_Status__c, Is_Active__c, Country__c, Business_address_street__c, Business_address_city__c, Business_address_state__c, Business_address_postal_code__c, Referring_Partner__c, First_Name__c, Last_Name__c, Email__c, Phone__c, Lead_LKP__c, OwnerId, am_email__c FROM Client__c WHERE ${CLIENT_WHERE}`);
+const clientsAll = await soql(`SELECT Id, Name, Company_Name__c, PRO_Company_ID__c, Client_ID__c, Application_Status__c, Is_Active__c, Country__c, Business_address_street__c, Business_address_city__c, Business_address_state__c, Business_address_postal_code__c, Referring_Partner__c, First_Name__c, Last_Name__c, Email__c, Phone__c, Lead_LKP__c, OwnerId, am_email__c, Credit_Industry_Code__c FROM Client__c WHERE ${CLIENT_WHERE}`);
 const junk = clientsAll.filter((c) => JUNK_NAME.test(c.Company_Name__c || c.Name || ''));
 report.junkExcluded = junk.map((c) => ({ id: c.Id, name: c.Company_Name__c || c.Name }));
 let clients = clientsAll.filter((c) => !JUNK_NAME.test(c.Company_Name__c || c.Name || ''));
@@ -152,8 +166,8 @@ if (BATCH !== Infinity) clients = clients.slice(0, BATCH);
 console.log(`  clients: ${clientsAll.length} pulled, ${junk.length} junk-named excluded, ${clients.length} in scope${BATCH !== Infinity ? ` (batch limit ${BATCH})` : ''}`);
 
 const clientIdSet = new Set(clients.map((c) => c.Id));
-const leadsUnconverted = await soql(`SELECT Id, FirstName, LastName, Email, Phone, MobilePhone, Title, Company, Status, LeadSource, Industry, Website, DoNotCall, IsConverted, ConvertedContactId, ConvertedAccountId, Type__c, Hot_list__c, Account_Notes__c, Accounting_Software__c, Desired_Funding_Amount__c, How_quickly_do_you_need_the_money__c, Do_you_invoice_businesses__c, Do_you_use_any_of_these_invoice_platform__c, How_Did_You_Hear_About_Us__c, Disqualified_Reason__c, Disqualified_Reason_Other__c, Lost_Reason__c, Lost_Reasons_Other__c, Renurture_Date__c, Renurture_Reason__c, Renurture_Reason_Other__c, Partner_Source__c, Partner_Agent_ID__c, Primary_Partner_Affiliation__c, Promo_Code__c, Client_LKP__c, CreatedDate, OwnerId FROM Lead WHERE IsConverted = false${FULL ? '' : ' AND CreatedDate = LAST_N_DAYS:180'}`);
-const leadsConverted = await soql(`SELECT Id, FirstName, LastName, Email, Phone, MobilePhone, Title, Company, Status, LeadSource, Industry, Website, DoNotCall, IsConverted, ConvertedContactId, ConvertedAccountId, Type__c, Hot_list__c, Account_Notes__c, Accounting_Software__c, Desired_Funding_Amount__c, How_quickly_do_you_need_the_money__c, Do_you_invoice_businesses__c, Do_you_use_any_of_these_invoice_platform__c, How_Did_You_Hear_About_Us__c, Disqualified_Reason__c, Disqualified_Reason_Other__c, Lost_Reason__c, Lost_Reasons_Other__c, Renurture_Date__c, Renurture_Reason__c, Renurture_Reason_Other__c, Partner_Source__c, Partner_Agent_ID__c, Primary_Partner_Affiliation__c, Promo_Code__c, Client_LKP__c, CreatedDate, OwnerId FROM Lead WHERE IsConverted = true AND Client_LKP__c != null`);
+const leadsUnconverted = await soql(`SELECT Id, FirstName, LastName, Email, Phone, MobilePhone, Title, Company, Status, LeadSource, Industry, Website, DoNotCall, IsConverted, ConvertedContactId, ConvertedAccountId, Type__c, Hot_list__c, Account_Notes__c, Accounting_Software__c, Desired_Funding_Amount__c, How_quickly_do_you_need_the_money__c, Do_you_invoice_businesses__c, Do_you_use_any_of_these_invoice_platform__c, How_Did_You_Hear_About_Us__c, Disqualified_Reason__c, Disqualified_Reason_Other__c, Lost_Reason__c, Lost_Reasons_Other__c, Renurture_Date__c, Renurture_Reason__c, Renurture_Reason_Other__c, Partner_Source__c, Partner_Agent_ID__c, Primary_Partner_Affiliation__c, Promo_Code__c, Client_LKP__c, CreatedDate, OwnerId, Credit_Industry_Code__c FROM Lead WHERE IsConverted = false${FULL ? '' : ' AND CreatedDate = LAST_N_DAYS:180'}`);
+const leadsConverted = await soql(`SELECT Id, FirstName, LastName, Email, Phone, MobilePhone, Title, Company, Status, LeadSource, Industry, Website, DoNotCall, IsConverted, ConvertedContactId, ConvertedAccountId, Type__c, Hot_list__c, Account_Notes__c, Accounting_Software__c, Desired_Funding_Amount__c, How_quickly_do_you_need_the_money__c, Do_you_invoice_businesses__c, Do_you_use_any_of_these_invoice_platform__c, How_Did_You_Hear_About_Us__c, Disqualified_Reason__c, Disqualified_Reason_Other__c, Lost_Reason__c, Lost_Reasons_Other__c, Renurture_Date__c, Renurture_Reason__c, Renurture_Reason_Other__c, Partner_Source__c, Partner_Agent_ID__c, Primary_Partner_Affiliation__c, Promo_Code__c, Client_LKP__c, CreatedDate, OwnerId, Credit_Industry_Code__c FROM Lead WHERE IsConverted = true AND Client_LKP__c != null`);
 const convertedInScope = leadsConverted.filter((l) => clientIdSet.has(l.Client_LKP__c));
 let leads = [...leadsUnconverted, ...convertedInScope];
 if (BATCH !== Infinity) {
@@ -165,7 +179,7 @@ console.log(`  leads: ${leadsUnconverted.length} unconverted, ${convertedInScope
 // Account enrichment (industry, source, type, NOA, persona, commission, risk… + sfAccountId).
 // Primary join: Account.Client_ID__c ↔ Client__c.Client_ID__c; fallback: converted lead's
 // ConvertedAccountId ↔ Client_LKP__c (enrich-demo pattern).
-const ACCOUNT_FIELDS = 'Id, Client_ID__c, Website, Description, Industry, Type, Churn_Date__c, Churn_Reason__c, Commission_Rate__c, Commission_Type__c, Critical_Account__c, Expected_Go_Live_Date__c, Key_Account__c, KYC_Date__c, NOA_Policy__c, Partner_Stage__c, Persona__c, Risk_Notes__c, Source__c, OwnerId';
+const ACCOUNT_FIELDS = 'Id, Client_ID__c, Website, Description, Industry, Type, Churn_Date__c, Churn_Reason__c, Commission_Rate__c, Commission_Type__c, Critical_Account__c, Expected_Go_Live_Date__c, Key_Account__c, KYC_Date__c, NOA_Policy__c, Partner_Stage__c, Persona__c, Risk_Notes__c, Source__c, OwnerId, Credit_Industry_Code__c';
 const accountsByClientKey = new Map(); // Client_ID__c -> account
 for (const a of await soql(`SELECT ${ACCOUNT_FIELDS} FROM Account WHERE Client_ID__c != null`)) {
   accountsByClientKey.set(a.Client_ID__c, a);
@@ -203,7 +217,7 @@ for (const l of [...convertedInScope].sort((a, b) => String(b.CreatedDate).local
 }
 // reverse join (Databricks schema insight, Linesh 2026-07-22): Client__c.Lead_LKP__c points
 // client→lead; catches funded clients whose lead lacks the forward Client_LKP__c backlink
-const LEAD_FULL_FIELDS = 'Id, FirstName, LastName, Email, Phone, MobilePhone, Title, Company, Status, LeadSource, Industry, Website, DoNotCall, IsConverted, ConvertedContactId, ConvertedAccountId, Type__c, Hot_list__c, Account_Notes__c, Accounting_Software__c, Desired_Funding_Amount__c, How_quickly_do_you_need_the_money__c, Do_you_invoice_businesses__c, Do_you_use_any_of_these_invoice_platform__c, How_Did_You_Hear_About_Us__c, Disqualified_Reason__c, Disqualified_Reason_Other__c, Lost_Reason__c, Lost_Reasons_Other__c, Renurture_Date__c, Renurture_Reason__c, Renurture_Reason_Other__c, Partner_Source__c, Partner_Agent_ID__c, Primary_Partner_Affiliation__c, Promo_Code__c, Client_LKP__c, CreatedDate, OwnerId';
+const LEAD_FULL_FIELDS = 'Id, FirstName, LastName, Email, Phone, MobilePhone, Title, Company, Status, LeadSource, Industry, Website, DoNotCall, IsConverted, ConvertedContactId, ConvertedAccountId, Type__c, Hot_list__c, Account_Notes__c, Accounting_Software__c, Desired_Funding_Amount__c, How_quickly_do_you_need_the_money__c, Do_you_invoice_businesses__c, Do_you_use_any_of_these_invoice_platform__c, How_Did_You_Hear_About_Us__c, Disqualified_Reason__c, Disqualified_Reason_Other__c, Lost_Reason__c, Lost_Reasons_Other__c, Renurture_Date__c, Renurture_Reason__c, Renurture_Reason_Other__c, Partner_Source__c, Partner_Agent_ID__c, Primary_Partner_Affiliation__c, Promo_Code__c, Client_LKP__c, CreatedDate, OwnerId, Credit_Industry_Code__c';
 const knownLeadIds = new Set([...leadsUnconverted, ...leadsConverted].map((l) => l.Id));
 const reverseLeadIds = [...new Set(clients.filter((c) => c.Lead_LKP__c && !leadByClient.has(c.Id) && !knownLeadIds.has(c.Lead_LKP__c)).map((c) => c.Lead_LKP__c))];
 const reverseLeadById = new Map();
@@ -277,6 +291,7 @@ for (const c of clients) {
     applicationStatus: c.Application_Status__c,
     sfOwnerEmail: ownerEmail[leadOwnerByClient.get(c.Id)] ?? ownerEmail[c.OwnerId] ?? (a ? ownerEmail[a.OwnerId] : undefined),
     sfAmEmail: c.am_email__c,
+    naicsSector: naicsSector(c.Credit_Industry_Code__c ?? a?.Credit_Industry_Code__c, a?.Industry ?? leadByClient.get(c.Id)?.Industry),
     ...(a ? clean({
       sfAccountId: a.Id,
       domainName: a.Website ? { primaryLinkUrl: a.Website.startsWith('http') ? a.Website : `https://${a.Website}` } : undefined,
@@ -340,6 +355,7 @@ const spawnCompanyFor = async (l) => {
     sfOwnerEmail: ownerEmail[l.OwnerId],
     domainName: l.Website ? { primaryLinkUrl: l.Website.startsWith('http') ? l.Website : `https://${l.Website}` } : undefined,
     industry: mapSel('company', 'industry', l.Industry),
+    naicsSector: naicsSector(l.Credit_Industry_Code__c, l.Industry),
     ...leadFieldsForCompany(l),
   });
   if (data.leadStatus === 'NEW_SIGN_UP') data.leadStatus = 'PROSPECT'; // spawns have no companyId
@@ -364,6 +380,7 @@ for (const l of orderedLeads) {
     leadStatus: mapSel('person', 'leadStatus', l.Status),
     leadSource: mapSel('person', 'leadSource', l.LeadSource),
     industry: mapSel('person', 'industry', l.Industry),
+    naicsSector: naicsSector(l.Credit_Industry_Code__c, l.Industry),
     clientType: mapSel('person', 'clientType', l.Type__c),
     accountingSoftware: mapSel('person', 'accountingSoftware', l.Accounting_Software__c),
     howQuicklyDoYouNeedTheMoney: mapSel('person', 'howQuicklyDoYouNeedTheMoney', l.How_quickly_do_you_need_the_money__c),
