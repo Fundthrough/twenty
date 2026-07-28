@@ -1,12 +1,12 @@
 import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 
 export default defineField({
-  universalIdentifier: 'e3923473-313d-42d2-86a3-b81aa166def2',
+  universalIdentifier: 'c1f7a0d2-3b48-4e6a-9d21-7f4c8b5e2a90',
   objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.company.universalIdentifier,
   type: FieldType.TEXT,
-  name: 'sfOwnerEmail',
-  label: 'SF Owner Email',
-  description: 'Imported: Sales lead owner email (Lead.OwnerId first, then Client__c, then Account). Backfill key for Account Owner. The Client Success AM is sfAmEmail.',
+  name: 'sfAmEmail',
+  label: 'SF AM Email',
+  description: 'Imported: Client__c.am_email__c. Backfill key for Account Manager (Client Success). Distinct from sfOwnerEmail, which is the Sales lead owner.',
   icon: 'IconMail',
   isNullable: true,
   defaultValue: null,

@@ -144,7 +144,7 @@ console.log('Pulling Salesforce…');
 // unconverted leads from the last 180 days. IMPORT_SCOPE=full reverts to everything-with-PRO-id.
 const FULL = process.env.IMPORT_SCOPE === 'full';
 const CLIENT_WHERE = FULL ? "PRO_Company_ID__c != null" : "Application_Status__c = 'Funded'";
-const clientsAll = await soql(`SELECT Id, Name, Company_Name__c, PRO_Company_ID__c, Client_ID__c, Application_Status__c, Is_Active__c, Country__c, Business_address_street__c, Business_address_city__c, Business_address_state__c, Business_address_postal_code__c, Referring_Partner__c, First_Name__c, Last_Name__c, Email__c, Phone__c, Lead_LKP__c, OwnerId FROM Client__c WHERE ${CLIENT_WHERE}`);
+const clientsAll = await soql(`SELECT Id, Name, Company_Name__c, PRO_Company_ID__c, Client_ID__c, Application_Status__c, Is_Active__c, Country__c, Business_address_street__c, Business_address_city__c, Business_address_state__c, Business_address_postal_code__c, Referring_Partner__c, First_Name__c, Last_Name__c, Email__c, Phone__c, Lead_LKP__c, OwnerId, am_email__c FROM Client__c WHERE ${CLIENT_WHERE}`);
 const junk = clientsAll.filter((c) => JUNK_NAME.test(c.Company_Name__c || c.Name || ''));
 report.junkExcluded = junk.map((c) => ({ id: c.Id, name: c.Company_Name__c || c.Name }));
 let clients = clientsAll.filter((c) => !JUNK_NAME.test(c.Company_Name__c || c.Name || ''));
@@ -276,6 +276,7 @@ for (const c of clients) {
     sfClientId: c.Id,
     applicationStatus: c.Application_Status__c,
     sfOwnerEmail: ownerEmail[leadOwnerByClient.get(c.Id)] ?? ownerEmail[c.OwnerId] ?? (a ? ownerEmail[a.OwnerId] : undefined),
+    sfAmEmail: c.am_email__c,
     ...(a ? clean({
       sfAccountId: a.Id,
       domainName: a.Website ? { primaryLinkUrl: a.Website.startsWith('http') ? a.Website : `https://${a.Website}` } : undefined,
@@ -436,6 +437,7 @@ for (const c of clients) {
         emails: { primaryEmail: c.Email__c.trim() },
         phones: normPhone(c.Phone__c),
         sfOwnerEmail: ownerEmail[leadOwnerByClient.get(c.Id)] ?? ownerEmail[c.OwnerId],
+        sfAmEmail: c.am_email__c,
         companyId: companyTwentyId && companyTwentyId !== 'dry' ? companyTwentyId : undefined,
     }) });
   if (r?.data?.createPerson?.id) { mCreated++; personByEmail.set(email, { id: r.data.createPerson.id }); }
