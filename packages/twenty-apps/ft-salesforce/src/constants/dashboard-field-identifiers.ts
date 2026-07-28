@@ -20,6 +20,7 @@ export const DASHBOARD_COMPANY = {
   id: 'ca0547a7-a55a-51f7-b5d7-f3a03e266c39',
   accountOwner: '20202020-95b8-4e10-9881-edb5d4765f9d',
   naicsSector: 'b7e41a09-2d6c-4f18-9a53-06c8f7d21e44',
+  accountManager: 'ae0c6b14-95d7-42f8-8c33-1b6d0e7a4f52',
   createdAt: 'd206d586-fd61-56e1-80a8-9993beb7be0b',
 } as const;
 
