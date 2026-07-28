@@ -97,7 +97,59 @@ async function gql(query, variables, attempt = 1) {
 }
 
 const valueMaps = JSON.parse(readFileSync(join(APP, 'scripts/value-maps.json'), 'utf8'));
-const mapSel = (obj, field, label) => (label ? valueMaps[obj]?.[field]?.[String(label).trim()] : undefined);
+// Every Salesforce picklist value that has no entry in value-maps.json, tallied rather than
+// silently dropped. This function used to return undefined on a miss and log nothing, which is
+// how 6,421 records carried an industry in Salesforce that never reached Twenty -- invisible
+// until someone happened to open a company and notice a blank field.
+const unmapped = new Map(); // "object.field" -> Map<rawValue, count>
+const mappedHits = new Map(); // "object.field" -> count, so a field can be reported as a ratio
+const mapSel = (obj, field, label) => {
+  if (label === undefined || label === null) return undefined;
+  const raw = String(label).trim();
+  if (raw === '') return undefined;
+  const key = `${obj}.${field}`;
+  const fieldMap = valueMaps[obj]?.[field];
+  const mapped = fieldMap?.[raw];
+  if (mapped === undefined) {
+    if (!unmapped.has(key)) unmapped.set(key, new Map());
+    const values = unmapped.get(key);
+    values.set(raw, (values.get(raw) ?? 0) + 1);
+    return undefined;
+  }
+  mappedHits.set(key, (mappedHits.get(key) ?? 0) + 1);
+  return mapped;
+};
+const reportUnmappedValues = () => {
+  const summary = {};
+  for (const [key, values] of unmapped) {
+    const [obj, field] = key.split('.');
+    const dropped = [...values.values()].reduce((a, b) => a + b, 0);
+    summary[key] = {
+      hasMapForField: Boolean(valueMaps[obj]?.[field]),
+      recordsMapped: mappedHits.get(key) ?? 0,
+      recordsDropped: dropped,
+      values: Object.fromEntries([...values.entries()].sort((a, b) => b[1] - a[1])),
+    };
+  }
+  if (Object.keys(summary).length === 0) {
+    console.log('unmapped picklist values: none');
+    return summary;
+  }
+  const ranked = Object.entries(summary).sort((a, b) => b[1].recordsDropped - a[1].recordsDropped);
+  const total = ranked.reduce((s, [, v]) => s + v.recordsDropped, 0);
+  console.log(`\nUNMAPPED PICKLIST VALUES -- ${total} field-values dropped across ${ranked.length} fields.`);
+  console.log('These reached Salesforce but not Twenty. Add them to scripts/value-maps.json.');
+  for (const [key, v] of ranked) {
+    const note = v.hasMapForField ? '' : '  (NO MAP DEFINED FOR THIS FIELD AT ALL)';
+    console.log(`  ${key}: ${v.recordsDropped} dropped, ${v.recordsMapped} mapped${note}`);
+    for (const [raw, n] of Object.entries(v.values).slice(0, 8)) {
+      console.log(`      ${String(n).padStart(6)}  ${JSON.stringify(raw)}`);
+    }
+    const extra = Object.keys(v.values).length - 8;
+    if (extra > 0) console.log(`      ... and ${extra} more distinct values (full list in the report JSON)`);
+  }
+  return summary;
+};
 // NAICS 2017 sector, inferred. Credit's 4-digit code is the better source when its leading pair
 // is a real sector, so it wins; otherwise fall back to the industry label. A third of credit's
 // codes are SIC or junk (7373, 1234), which is exactly why only the 2-digit level is stored.
@@ -486,6 +538,7 @@ for (const t of scopedTasks) {
 report.tasks = { created: tCreated, skippedExisting: tSkipped, failed: tFailed, scoped: scopedTasks.length };
 console.log(`tasks: ${tCreated} created, ${tSkipped} already present, ${tFailed} failed (of ${scopedTasks.length} in scope)`);
 
+report.unmappedPicklistValues = reportUnmappedValues();
 report.finishedAt = new Date().toISOString();
 const out = join(APP, `docs/import-report-${new Date().toISOString().slice(0, 10)}${DRY ? '-dry' : ''}${BATCH !== Infinity ? `-batch${BATCH}` : ''}.json`);
 writeFileSync(out, JSON.stringify(report, null, 2));
