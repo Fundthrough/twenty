@@ -73,8 +73,37 @@ const handler = async () => {
     promoted++;
   }
 
-  console.log(`last-activity-sweep: ${candidates.length} recent contacts, ${promoted} promoted`);
-  return { candidates: candidates.length, promoted };
+  // Anyone whose last contact predates the window above would never be picked up, which is how
+  // email-only people ended up with an empty Last Activity. This pass drains them a page at a
+  // time so the column stays complete without a hand-run backfill.
+  let seeded = 0;
+  const backlog = await gql(
+    `query B($limit: Int!) {
+      people(filter: { and: [{ lastContactAt: { is: "NOT_NULL" } }, { lastActivityAt: { is: "NULL" } }] }, first: $limit) {
+        edges { node { id companyId lastContactAt lastContactById lastContactItemMessageId lastContactItemCalendarEventId } }
+      }
+    }`,
+    { limit: PAGE_SIZE },
+  ) as { people?: { edges?: Array<{ node: Record<string, string | null> }> } } | undefined;
+
+  for (const person of backlog?.people?.edges?.map((e) => e.node) ?? []) {
+    if (!person.lastContactAt) continue;
+    const data: Record<string, unknown> = {
+      lastActivityAt: person.lastContactAt,
+      lastActivityType: person.lastContactItemCalendarEventId ? 'MEETING' : 'EMAIL',
+    };
+    if (person.lastContactById) data.lastActivityById = person.lastContactById;
+    if (person.lastContactItemMessageId) data.lastActivityItemMessageId = person.lastContactItemMessageId;
+    if (person.lastContactItemCalendarEventId) data.lastActivityItemCalendarEventId = person.lastContactItemCalendarEventId;
+    await gql(`mutation U($id: UUID!, $data: PersonUpdateInput!) { updatePerson(id: $id, data: $data) { id } }`, {
+      id: person.id,
+      data,
+    });
+    seeded++;
+  }
+
+  console.log(`last-activity-sweep: ${candidates.length} recent contacts, ${promoted} promoted, ${seeded} backlog seeded`);
+  return { candidates: candidates.length, promoted, seeded };
 };
 
 export default defineLogicFunction({

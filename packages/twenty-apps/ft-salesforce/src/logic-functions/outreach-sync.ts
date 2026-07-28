@@ -140,7 +140,7 @@ const handler = async () => {
   const lookbackMinutes = Number(process.env.OUTREACH_SYNC_LOOKBACK_MINUTES ?? DEFAULT_LOOKBACK_MINUTES) || DEFAULT_LOOKBACK_MINUTES;
   const sinceIso = new Date(Date.now() - lookbackMinutes * 60 * 1000).toISOString();
   const window = `filter[updatedAt]=${encodeURIComponent(`${sinceIso}..inf`)}&sort=-updatedAt&page[limit]=${PAGE_LIMIT}`;
-  const summary: Record<string, number> = { tasks: 0, mailings: 0, sequenceStates: 0, calls: 0, unmatchedTasks: 0, unmatchedMailings: 0, unmatchedStates: 0 };
+  const summary: Record<string, number> = { tasks: 0, mailings: 0, sequenceStates: 0, unmatchedTasks: 0, unmatchedMailings: 0, unmatchedStates: 0 };
 
   try {
     // ---- tasks -> Twenty Tasks (upsert by outreachTaskId) ----
@@ -214,52 +214,11 @@ const handler = async () => {
       await setEngagement(person, `sequence_${String(a.state ?? 'updated')}`, a.updatedAt, await sequenceName(relId(row, 'sequence')));
     }
 
-    // ---- calls -> Call records (upsert by external id) ----
-    const calls = (await outreach(`/calls?${window}`))?.data as OutreachRow[] | undefined;
-    for (const row of calls ?? []) {
-      const person = await findPerson(relId(row, 'prospect'));
-      summary.calls++;
-      if (logOnly) continue;
-      const a = row.attributes ?? {};
-      const externalId = `outreach-${row.id}`;
-      const direction = String(a.direction ?? '').toLowerCase() === 'inbound' ? 'INBOUND' : 'OUTBOUND';
-      const data: Record<string, unknown> = {
-        name: `Outreach ${direction === 'INBOUND' ? 'inbound' : 'outbound'} call${person ? '' : ' (unmatched)'}`,
-        dialpadCallId: externalId,
-        callSource: 'OUTREACH',
-        direction,
-        startedAt: typeof a.completedAt === 'string' ? a.completedAt : (a.createdAt as string | undefined) ?? new Date().toISOString(),
-        personId: person?.id ?? null,
-        companyId: person?.companyId ?? null,
-      };
-      const existing = await gql(
-        `query C($cid: String!) { calls(filter: { dialpadCallId: { eq: $cid } }, first: 1) { edges { node { id } } } }`,
-        { cid: externalId },
-      ) as { calls?: { edges?: Array<{ node: { id: string } }> } } | undefined;
-      let callId = existing?.calls?.edges?.[0]?.node?.id;
-      if (callId) {
-        await gql(`mutation U($id: UUID!, $data: CallUpdateInput!) { updateCall(id: $id, data: $data) { id } }`, { id: callId, data });
-      } else {
-        const created = await gql(`mutation C($data: CallCreateInput!) { createCall(data: $data) { id } }`, { data }) as
-          | { createCall?: { id?: string } }
-          | undefined;
-        callId = created?.createCall?.id;
-      }
+    // Calls are deliberately not synced. Reps dial through Outreach but Dialpad places the
+    // calls, so Outreach only ever hands back a thinner copy (externalVendor "dialpad", the
+    // same vendorCallId we already store) with no duration, number or recording. The Dialpad
+    // webhook is the single source for call records.
 
-      if (person && callId) {
-        const startedAt = String(data.startedAt);
-        const activity = { lastActivityAt: startedAt, lastActivityType: 'CALL', lastActivityItemCallId: callId };
-        const current = await gql(`query P($id: UUID!) { person(filter: { id: { eq: $id } }) { lastActivityAt } }`, { id: person.id }) as
-          | { person?: { lastActivityAt?: string | null } }
-          | undefined;
-        if (!current?.person?.lastActivityAt || new Date(startedAt) >= new Date(current.person.lastActivityAt)) {
-          await gql(`mutation U($id: UUID!, $data: PersonUpdateInput!) { updatePerson(id: $id, data: $data) { id } }`, { id: person.id, data: activity });
-        }
-        if (person.companyId) {
-          await gql(`mutation U($id: UUID!, $data: CompanyUpdateInput!) { updateCompany(id: $id, data: $data) { id } }`, { id: person.companyId, data: activity });
-        }
-      }
-    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.log(`outreach-sync aborted: ${message}`);
