@@ -120,11 +120,29 @@ export default definePageLayoutTab({
       },
     },
     {
+      universalIdentifier: '93ad148f-76ca-4519-8cef-b4d673c7a38e',
+      title: 'Calls per day by AM',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_CALL.object,
+      gridPosition: { row: 14, column: 0, rowSpan: 6, columnSpan: 12 },
+      configuration: {
+        configurationType: 'LINE_CHART',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_CALL.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_CALL.startedAt,
+        primaryAxisDateGranularity: ObjectRecordGroupByDateGranularity.DAY,
+        secondaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_CALL.handledBy,
+        secondaryAxisGroupBySubFieldName: 'name.firstName',
+        displayLegend: true,
+        description: 'One line per AM. Ring-group calls have no answerer so they group under Not Set.',
+      },
+    },
+    {
       universalIdentifier: '60dae15c-4397-4286-9fbc-81a34094705b',
       title: 'Emails sent per AM',
       type: 'GRAPH',
       objectUniversalIdentifier: DASHBOARD_MESSAGE_PARTICIPANT.object,
-      gridPosition: { row: 14, column: 0, rowSpan: 6, columnSpan: 6 },
+      gridPosition: { row: 20, column: 0, rowSpan: 6, columnSpan: 6 },
       configuration: {
         configurationType: 'BAR_CHART',
         layout: 'HORIZONTAL',
@@ -153,7 +171,7 @@ export default definePageLayoutTab({
       title: 'Open tasks per assignee',
       type: 'GRAPH',
       objectUniversalIdentifier: DASHBOARD_TASK.object,
-      gridPosition: { row: 14, column: 6, rowSpan: 6, columnSpan: 6 },
+      gridPosition: { row: 20, column: 6, rowSpan: 6, columnSpan: 6 },
       configuration: {
         configurationType: 'BAR_CHART',
         layout: 'HORIZONTAL',
@@ -181,7 +199,7 @@ export default definePageLayoutTab({
       title: 'Accounts per AM',
       type: 'GRAPH',
       objectUniversalIdentifier: DASHBOARD_COMPANY.object,
-      gridPosition: { row: 20, column: 0, rowSpan: 6, columnSpan: 6 },
+      gridPosition: { row: 26, column: 0, rowSpan: 6, columnSpan: 6 },
       configuration: {
         configurationType: 'BAR_CHART',
         layout: 'HORIZONTAL',
