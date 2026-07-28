@@ -1,0 +1,194 @@
+import { AggregateOperations, definePageLayoutTab, ObjectRecordGroupByDateGranularity, PageLayoutTabLayoutMode, ViewFilterOperand } from 'twenty-sdk/define';
+import {
+  AM_DASHBOARD_TAB_ACTIVITY_UID,
+  AM_DASHBOARD_UID,
+  DASHBOARD_CALL,
+  DASHBOARD_COMPANY,
+  DASHBOARD_MESSAGE_PARTICIPANT,
+  DASHBOARD_TASK,
+} from 'src/constants/dashboard-field-identifiers';
+
+// Reachout activity, shared by both teams because calls, emails and tasks are not team-specific.
+//
+// Two honest limits are surfaced as widget descriptions rather than left for a viewer to trip
+// over: call history only begins 2026-07-20 when the Dialpad webhook went live, and emails per AM
+// cannot be time-windowed because messageParticipant.createdAt is sync time, not send time.
+export default definePageLayoutTab({
+  universalIdentifier: AM_DASHBOARD_TAB_ACTIVITY_UID,
+  pageLayoutUniversalIdentifier: AM_DASHBOARD_UID,
+  title: 'Activity',
+  position: 1,
+  icon: 'IconPhoneCall',
+  layoutMode: PageLayoutTabLayoutMode.GRID,
+  widgets: [
+    {
+      universalIdentifier: '1b8f5c07-9e42-4d31-8a67-3c5e0b492f16',
+      title: 'Calls last 7 days',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_CALL.object,
+      gridPosition: { row: 0, column: 0, rowSpan: 2, columnSpan: 6 },
+      configuration: {
+        configurationType: 'AGGREGATE_CHART',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_CALL.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        label: 'Calls this week',
+        displayDataLabel: true,
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_CALL.startedAt,
+              operand: ViewFilterOperand.IS_IN_PAST,
+              value: '{"direction":"PAST","amount":7,"unit":"DAY"}',
+              type: 'DATE_TIME',
+            },
+          ],
+        },
+      },
+    },
+    {
+      universalIdentifier: '2c9a6d18-0f53-4e42-9b78-4d6f1c503a27',
+      title: 'Talk time',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_CALL.object,
+      gridPosition: { row: 0, column: 6, rowSpan: 2, columnSpan: 6 },
+      configuration: {
+        configurationType: 'AGGREGATE_CHART',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_CALL.durationSeconds,
+        aggregateOperation: AggregateOperations.SUM,
+        label: 'Total talk time',
+        suffix: ' sec',
+        displayDataLabel: true,
+      },
+    },
+    {
+      universalIdentifier: '3da7be29-1064-4f53-8c89-5e701d614b38',
+      title: 'Calls per AM',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_CALL.object,
+      gridPosition: { row: 2, column: 0, rowSpan: 6, columnSpan: 6 },
+      configuration: {
+        configurationType: 'BAR_CHART',
+        layout: 'HORIZONTAL',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_CALL.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_CALL.handledBy,
+        primaryAxisOrderBy: 'VALUE_DESC',
+        // ring-group calls stay in the blank bucket so the attribution gap stays visible
+        omitNullValues: false,
+        displayLegend: false,
+        displayDataLabel: true,
+        description: 'Blank bucket is ring-group legs (Sales team, Customer Success) with no single answerer.',
+      },
+    },
+    {
+      universalIdentifier: '4eb8cf3a-2175-4064-9d9a-6f812e725c49',
+      title: 'Call outcome per AM',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_CALL.object,
+      gridPosition: { row: 2, column: 6, rowSpan: 6, columnSpan: 6 },
+      configuration: {
+        configurationType: 'BAR_CHART',
+        layout: 'HORIZONTAL',
+        groupMode: 'STACKED',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_CALL.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_CALL.handledBy,
+        primaryAxisOrderBy: 'VALUE_DESC',
+        secondaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_CALL.outcome,
+        omitNullValues: true,
+        displayLegend: true,
+        description: 'Completed versus missed and voicemail, so connect rate reads off the bar.',
+      },
+    },
+    {
+      universalIdentifier: '5fc9d04b-3286-4175-8eab-70923f836d5a',
+      title: 'Calls per day',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_CALL.object,
+      gridPosition: { row: 8, column: 0, rowSpan: 6, columnSpan: 12 },
+      configuration: {
+        configurationType: 'LINE_CHART',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_CALL.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_CALL.startedAt,
+        primaryAxisDateGranularity: ObjectRecordGroupByDateGranularity.DAY,
+        secondaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_CALL.direction,
+        displayLegend: true,
+        description: 'History begins 2026-07-20, when the Dialpad webhook went live.',
+      },
+    },
+    {
+      universalIdentifier: '60dae15c-4397-4286-9fbc-81a34094705b',
+      title: 'Emails sent per AM',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_MESSAGE_PARTICIPANT.object,
+      gridPosition: { row: 14, column: 0, rowSpan: 6, columnSpan: 6 },
+      configuration: {
+        configurationType: 'BAR_CHART',
+        layout: 'HORIZONTAL',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_MESSAGE_PARTICIPANT.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_MESSAGE_PARTICIPANT.workspaceMember,
+        primaryAxisOrderBy: 'VALUE_DESC',
+        omitNullValues: true,
+        displayLegend: false,
+        description: 'All time, not this period: participants carry no send date, so it favours longer tenure.',
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_MESSAGE_PARTICIPANT.role,
+              operand: ViewFilterOperand.IS,
+              value: '["FROM"]',
+              type: 'SELECT',
+            },
+          ],
+        },
+      },
+    },
+    {
+      universalIdentifier: '71ebf26d-54a8-4397-8acd-92b451a5816c',
+      title: 'Open tasks per assignee',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_TASK.object,
+      gridPosition: { row: 14, column: 6, rowSpan: 6, columnSpan: 6 },
+      configuration: {
+        configurationType: 'BAR_CHART',
+        layout: 'HORIZONTAL',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_TASK.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_TASK.assignee,
+        primaryAxisOrderBy: 'VALUE_DESC',
+        omitNullValues: true,
+        displayLegend: false,
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_TASK.status,
+              operand: ViewFilterOperand.IS_NOT,
+              value: '["DONE"]',
+              type: 'SELECT',
+            },
+          ],
+        },
+      },
+    },
+    {
+      universalIdentifier: '82fc037e-65b9-4408-9bde-a3c562b6927d',
+      title: 'Accounts per AM',
+      type: 'GRAPH',
+      objectUniversalIdentifier: DASHBOARD_COMPANY.object,
+      gridPosition: { row: 20, column: 0, rowSpan: 6, columnSpan: 6 },
+      configuration: {
+        configurationType: 'BAR_CHART',
+        layout: 'HORIZONTAL',
+        aggregateFieldMetadataUniversalIdentifier: DASHBOARD_COMPANY.id,
+        aggregateOperation: AggregateOperations.COUNT,
+        primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_COMPANY.accountOwner,
+        primaryAxisOrderBy: 'VALUE_DESC',
+        omitNullValues: true,
+        displayLegend: false,
+        description: 'Current relationship owner: Sales while prospecting, Client Success once funded.',
+      },
+    },
+  ],
+});
