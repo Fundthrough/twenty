@@ -1,9 +1,10 @@
 // Populates person.owner and company.accountOwner from the sfOwnerEmail carried over by the
 // Salesforce import. The import never resolved these relations, so every record landed unowned.
 //
-// Only Salesforce owners who are current workspace members are assigned. The rest are departed
-// reps, plus shared mailboxes (backoffice@, marketingadmin@, techadmin@) that own thousands of
-// records between them and must never be folded into an individual's book.
+// Only Salesforce owners who are current workspace members are assigned, plus the departed reps
+// listed in REASSIGNED below. Everything else stays unowned: shared mailboxes (backoffice@,
+// marketingadmin@, techadmin@) own thousands of records between them and must never be folded
+// into an individual's book.
 //
 // Filtered bulk mutations rather than one call per record, chunked because the API rejects an
 // update touching more than 200 rows. Each chunk re-queries for rows whose owner is still NULL,
@@ -44,6 +45,13 @@ const members = (await gql('{ workspaceMembers(first: 200) { edges { node { id u
   ?.workspaceMembers?.edges?.map((e) => e.node) ?? [];
 
 const CHUNK = 200;
+
+// Departed Salesforce owners whose book has been handed to a current member. Each entry is a
+// deliberate business decision, not a name match: cbacon is a different Bacon from Allie
+// (abacon), so surname matching would have mis-assigned these 52 records.
+const REASSIGNED = {
+  'cbacon@fundthrough.com': 'kelli@fundthrough.com',
+};
 
 const TARGETS = [
   {
@@ -94,22 +102,35 @@ for (const target of TARGETS) {
   let total = 0;
   const lines = [];
   for (const member of members) {
-    const email = member.userEmail.toLowerCase();
-    const pending = await target.count(email);
-    if (pending === 0) continue;
+    const own = member.userEmail.toLowerCase();
+    const inherited = Object.entries(REASSIGNED)
+      .filter(([, to]) => to === own)
+      .map(([from]) => from);
 
     let written = 0;
-    if (DRY_RUN) {
-      written = pending;
-    } else {
-      for (let chunk = 0; chunk * CHUNK < pending + CHUNK; chunk++) {
-        const ids = await target.ids(email);
-        if (ids.length === 0) break;
-        written += await target.update(ids, member.id);
+    const detail = [];
+    for (const email of [own, ...inherited]) {
+      const pending = await target.count(email);
+      if (pending === 0) continue;
+
+      let done = 0;
+      if (DRY_RUN) {
+        done = pending;
+      } else {
+        for (let chunk = 0; chunk * CHUNK < pending + CHUNK; chunk++) {
+          const ids = await target.ids(email);
+          if (ids.length === 0) break;
+          done += await target.update(ids, member.id);
+        }
       }
+      written += done;
+      if (email !== own) detail.push(`${done} inherited from ${email}`);
+      if (done !== pending) detail.push(`only ${done} of ${pending} for ${email}`);
     }
+    if (written === 0) continue;
+
     total += written;
-    lines.push(`  ${member.name.firstName} ${member.name.lastName}: ${written}${written === pending ? '' : ` of ${pending}`}`);
+    lines.push(`  ${member.name.firstName} ${member.name.lastName}: ${written}${detail.length ? ` (${detail.join('; ')})` : ''}`);
   }
   console.log(`${DRY_RUN ? '[dry run] ' : ''}${target.label} assigned: ${total}`);
   if (lines.length > 0) console.log(lines.join('\n'));
