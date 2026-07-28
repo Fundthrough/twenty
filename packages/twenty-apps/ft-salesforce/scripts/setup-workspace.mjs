@@ -642,4 +642,32 @@ if (call) {
   }
 }
 
+// ---- dashboard records ----
+// A DASHBOARD page layout is only metadata. What a user clicks is a dashboard *record* whose
+// pageLayoutId points at that layout, and records are data, so the app manifest cannot create
+// them. Without this the dashboard deploys cleanly and is invisible.
+{
+  const layouts = await gql('{ getPageLayouts { id name type } }');
+  const wanted = ['AM Workload & Activity'];
+  for (const name of wanted) {
+    const layout = (layouts?.data?.getPageLayouts ?? []).find((p) => p.name === name && p.type === 'DASHBOARD');
+    if (!layout) { console.log(`dashboard "${name}": no DASHBOARD page layout yet, skipping`); continue; }
+    const existing = await gql(
+      'query D($title: String!) { dashboards(filter: { title: { eq: $title } }, first: 1) { edges { node { id pageLayoutId } } } }',
+      { title: name }, '/graphql');
+    const found = existing?.data?.dashboards?.edges?.[0]?.node;
+    if (found?.pageLayoutId === layout.id) { console.log(`dashboard "${name}": already linked`); continue; }
+    if (found) {
+      // layout was recreated with a new id, so repoint rather than making a duplicate
+      const r = await gql('mutation U($id: UUID!, $data: DashboardUpdateInput!) { updateDashboard(id: $id, data: $data) { id } }',
+        { id: found.id, data: { pageLayoutId: layout.id } }, '/graphql');
+      console.log(`dashboard "${name}": ${r?.data ? 'repointed to current layout' : 'REPOINT FAILED ' + JSON.stringify(r?.errors).slice(0, 140)}`);
+      continue;
+    }
+    const r = await gql('mutation C($data: DashboardCreateInput!) { createDashboard(data: $data) { id } }',
+      { data: { title: name, pageLayoutId: layout.id } }, '/graphql');
+    console.log(`dashboard "${name}": ${r?.data ? 'created' : 'CREATE FAILED ' + JSON.stringify(r?.errors).slice(0, 140)}`);
+  }
+}
+
 console.log('WORKSPACE SETUP COMPLETE');

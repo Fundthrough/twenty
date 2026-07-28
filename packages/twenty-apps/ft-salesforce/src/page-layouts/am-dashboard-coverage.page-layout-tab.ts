@@ -61,6 +61,7 @@ export default definePageLayoutTab({
         aggregateFieldMetadataUniversalIdentifier: DASHBOARD_PERSON.id,
         aggregateOperation: AggregateOperations.COUNT,
         primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_PERSON.owner,
+        primaryAxisGroupBySubFieldName: 'name.firstName',
         primaryAxisOrderBy: 'VALUE_DESC',
         omitNullValues: true,
         displayLegend: false,
@@ -80,6 +81,7 @@ export default definePageLayoutTab({
         aggregateFieldMetadataUniversalIdentifier: DASHBOARD_PERSON.id,
         aggregateOperation: AggregateOperations.COUNT,
         primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_PERSON.owner,
+        primaryAxisGroupBySubFieldName: 'name.firstName',
         primaryAxisOrderBy: 'VALUE_DESC',
         secondaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_PERSON.lastActivityType,
         // untouched leads must stay visible: they are the point of the chart
