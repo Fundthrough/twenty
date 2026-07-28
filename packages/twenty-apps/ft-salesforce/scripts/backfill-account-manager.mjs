@@ -19,6 +19,13 @@ const DRY_RUN = process.env.DRY_RUN === '1';
 const SHARED = new Set(['backoffice@fundthrough.com', 'marketingadmin@fundthrough.com', 'techadmin@fundthrough.com']);
 const CHUNK = 200;
 
+// Departed AMs whose clients moved to a current member. jc@ is deliberately absent: those
+// clients stay unassigned rather than being handed to someone who does not run them.
+const AM_REASSIGNED = {
+  'arosbrook@fundthrough.com': 'kelli@fundthrough.com',
+  'ebooker@fundthrough.com': 'kelli@fundthrough.com',
+};
+
 const cfg = JSON.parse(readFileSync(join(homedir(), '.twenty/config.json'), 'utf8')).remotes.sales;
 const claim = JSON.parse(Buffer.from(cfg.apiKey.split('.')[1], 'base64url').toString());
 if (claim.workspaceId !== SALES_WORKSPACE_ID) {
@@ -81,6 +88,11 @@ console.log(`SF clients with a named AM: ${amByClientId.size} (shared queues lef
 const members = (await gql('{ workspaceMembers(first: 200) { edges { node { id userEmail name { firstName lastName } } } } }'))
   ?.workspaceMembers?.edges?.map((e) => e.node) ?? [];
 const memberByEmail = new Map(members.map((m) => [m.userEmail.toLowerCase(), m]));
+for (const [from, to] of Object.entries(AM_REASSIGNED)) {
+  const member = memberByEmail.get(to);
+  if (member) memberByEmail.set(from, member);
+  else console.log(`AM_REASSIGNED target is not a workspace member, skipping: ${to}`);
+}
 
 // Walk Twenty companies once, deciding per record what it needs. The relation write is grouped
 // by member so it can go out as filtered bulk updates instead of one call per company.
