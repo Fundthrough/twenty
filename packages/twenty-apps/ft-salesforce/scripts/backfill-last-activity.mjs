@@ -75,7 +75,7 @@ const applyPeople = async () => {
   let skipped = 0;
   for (const [personId, call] of callsByPerson) {
     const res = await gql(
-      `query P($id: UUID!) { person(filter: { id: { eq: $id } }) { id lastContactAt lastContactById lastActivityAt lastContactItem { __typename ... on CalendarEvent { id } ... on Message { id } } } }`,
+      `query P($id: UUID!) { person(filter: { id: { eq: $id } }) { id lastContactAt lastContactById lastActivityAt lastActivityById lastContactItem { __typename ... on CalendarEvent { id } ... on Message { id } } } }`,
       { id: personId },
     );
     const person = res?.person;
@@ -83,7 +83,12 @@ const applyPeople = async () => {
 
     const winner = newer(person.lastContactAt, call.startedAt);
     if (!winner) continue;
-    if (person.lastActivityAt && new Date(person.lastActivityAt).getTime() === new Date(winner).getTime()) {
+    // the date matching is not enough on its own: handledBy landed on calls after the first
+    // backfill, so a record can be on the right date and still be missing its owner
+    const wantsBy = winner === call.startedAt ? call.handledById : person.lastContactById;
+    const dateCurrent = person.lastActivityAt && new Date(person.lastActivityAt).getTime() === new Date(winner).getTime();
+    const byCurrent = !wantsBy || person.lastActivityById === wantsBy;
+    if (dateCurrent && byCurrent) {
       skipped++;
       continue;
     }
@@ -138,5 +143,42 @@ const applyCompanies = async () => {
   console.log(`${DRY_RUN ? '[dry run] ' : ''}companies updated: ${updated}`);
 };
 
+// Records whose only history is email or meetings never appear in the call scan above, so
+// seed those straight from the Last contact app's value. Without this, Last Activity looks
+// emptier than Last Contact for anyone who has only ever been emailed.
+const seedFromContactOnly = async (collection, updateMutation, inputType) => {
+  let seeded = 0;
+  for (;;) {
+    const page = await gql(
+      `query R { ${collection}(filter: { and: [{ lastContactAt: { is: "NOT_NULL" } }, { lastActivityAt: { is: "NULL" } }] }, first: 60) {
+        edges { node { id lastContactAt lastContactById lastContactItemMessageId lastContactItemCalendarEventId } } } }`,
+    );
+    const rows = page?.[collection]?.edges?.map((e) => e.node) ?? [];
+    if (rows.length === 0) break;
+
+    for (const row of rows) {
+      const data = {
+        lastActivityAt: row.lastContactAt,
+        lastActivityType: row.lastContactItemCalendarEventId ? 'MEETING' : 'EMAIL',
+      };
+      if (row.lastContactById) data.lastActivityById = row.lastContactById;
+      if (row.lastContactItemMessageId) data.lastActivityItemMessageId = row.lastContactItemMessageId;
+      if (row.lastContactItemCalendarEventId) data.lastActivityItemCalendarEventId = row.lastContactItemCalendarEventId;
+
+      if (DRY_RUN) { seeded++; continue; }
+      await gql(`mutation U($id: UUID!, $data: ${inputType}!) { ${updateMutation}(id: $id, data: $data) { id } }`, {
+        id: row.id,
+        data,
+      });
+      seeded++;
+    }
+    // dry runs never clear the filter, so one page is enough to size the work
+    if (DRY_RUN) break;
+  }
+  console.log(`${DRY_RUN ? '[dry run] ' : ''}${collection} seeded from last contact: ${seeded}`);
+};
+
 await applyPeople();
 await applyCompanies();
+await seedFromContactOnly('people', 'updatePerson', 'PersonUpdateInput');
+await seedFromContactOnly('companies', 'updateCompany', 'CompanyUpdateInput');

@@ -430,12 +430,13 @@ if (call) {
   // 7g. curated columns on the main tables (custom fields forward, empty default noise hidden)
   const companyIndex = allViews7.find((v) => v.name === 'All Companies' && v.objectMetadataId === objects.company.id);
   await ensureColumns(companyIndex, 'company',
-    ['name', 'companyId', 'applicationStatus', 'industry', 'accountOwner', 'source', 'domainName', 'createdAt'],
-    ['employees', 'linkedinLink', 'xLink', 'createdBy', 'address']);
+    ['name', 'companyId', 'applicationStatus', 'lastActivityAt', 'lastActivityType', 'lastActivityBy', 'lastActivityItem', 'industry', 'accountOwner', 'source', 'domainName', 'createdAt'],
+    // the Last contact app's fields are superseded by lastActivity*, which also covers calls and SMS
+    ['employees', 'linkedinLink', 'xLink', 'createdBy', 'address', 'lastContactAt', 'lastContactBy', 'lastContactItem']);
   const peopleIndex = allViews7.find((v) => v.name === 'All People' && v.objectMetadataId === objects.person.id);
   await ensureColumns(peopleIndex, 'person',
-    ['name', 'leadStatus', 'companyName', 'phones', 'emails', 'leadSource', 'createdAt'],
-    ['linkedinLink', 'xLink', 'jobTitle', 'city', 'createdBy']);
+    ['name', 'leadStatus', 'companyName', 'phones', 'emails', 'lastActivityAt', 'lastActivityType', 'lastActivityBy', 'lastActivityItem', 'leadSource', 'createdAt'],
+    ['linkedinLink', 'xLink', 'jobTitle', 'city', 'createdBy', 'lastContactAt', 'lastContactBy', 'lastContactItem']);
 }
 
 // ---- 8c. company side panel order (Linesh 2026-07-22): Fields, People, Term Sheets ----
