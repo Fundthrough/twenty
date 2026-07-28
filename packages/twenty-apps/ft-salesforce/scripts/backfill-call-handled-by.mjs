@@ -40,35 +40,42 @@ const members = (await gql('{ workspaceMembers(first: 200) { edges { node { id n
   ?.workspaceMembers?.edges?.map((e) => e.node) ?? [];
 const memberByName = new Map(members.map((m) => [`${m.name.firstName} ${m.name.lastName}`.trim().toLowerCase(), m.id]));
 
-let cursor = null;
 let scanned = 0;
 let set = 0;
 const unresolved = new Map();
-for (;;) {
-  const page = await gql(
-    `query C($after: String) { calls(filter: { handledById: { is: "NULL" } }, first: 100, after: $after) { pageInfo { hasNextPage endCursor } edges { node { id dialpadUser } } } }`,
-    { after: cursor },
-  );
-  const conn = page?.calls;
-  if (!conn) break;
-  for (const { node } of conn.edges) {
-    scanned++;
-    const memberId = node.dialpadUser ? memberByName.get(node.dialpadUser.trim().toLowerCase()) : undefined;
-    if (!memberId) {
-      if (node.dialpadUser) unresolved.set(node.dialpadUser, (unresolved.get(node.dialpadUser) ?? 0) + 1);
-      continue;
+// Live runs shrink the filter as they write, so page with the cursor inside a pass and repeat
+// passes until one resolves nothing. Records already carrying handledBy drop out on their own.
+for (let pass = 1; pass <= 20; pass++) {
+  let cursor = null;
+  let resolvedThisPass = 0;
+  unresolved.clear();
+  for (;;) {
+    const page = await gql(
+      `query C($after: String) { calls(filter: { handledById: { is: "NULL" } }, first: 100, after: $after) { pageInfo { hasNextPage endCursor } edges { node { id dialpadUser } } } }`,
+      { after: cursor },
+    );
+    const conn = page?.calls;
+    if (!conn) break;
+    for (const { node } of conn.edges) {
+      scanned++;
+      const memberId = node.dialpadUser ? memberByName.get(node.dialpadUser.trim().toLowerCase()) : undefined;
+      if (!memberId) {
+        if (node.dialpadUser) unresolved.set(node.dialpadUser, (unresolved.get(node.dialpadUser) ?? 0) + 1);
+        continue;
+      }
+      if (!DRY_RUN) {
+        await gql('mutation U($id: UUID!, $data: CallUpdateInput!) { updateCall(id: $id, data: $data) { id } }', {
+          id: node.id,
+          data: { handledById: memberId },
+        });
+      }
+      set++;
+      resolvedThisPass++;
     }
-    if (!DRY_RUN) {
-      await gql('mutation U($id: UUID!, $data: CallUpdateInput!) { updateCall(id: $id, data: $data) { id } }', {
-        id: node.id,
-        data: { handledById: memberId },
-      });
-    }
-    set++;
+    if (!conn.pageInfo.hasNextPage) break;
+    cursor = conn.pageInfo.endCursor;
   }
-  if (!conn.pageInfo.hasNextPage) break;
-  cursor = DRY_RUN ? conn.pageInfo.endCursor : null; // live runs shrink the filter as they go
-  if (!DRY_RUN) cursor = null;
+  if (DRY_RUN || resolvedThisPass === 0) break;
 }
 
 console.log(`${DRY_RUN ? '[dry run] ' : ''}calls without handledBy scanned: ${scanned}, resolved: ${set}`);
