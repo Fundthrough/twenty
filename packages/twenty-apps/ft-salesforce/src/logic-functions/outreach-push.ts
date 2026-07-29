@@ -3,13 +3,14 @@ import { CoreApiClient } from 'twenty-client-sdk/core';
 import { defineLogicFunction, HTTPMethod } from 'twenty-sdk/define';
 import { type RoutePayload, Response } from 'twenty-sdk/logic-function';
 import { OUTREACH_PUSH_UID } from 'src/constants/universal-identifiers';
+import { refreshOutreachToken } from 'src/utils/outreach-token';
 
 // "Push to Outreach" action (EE-5069 Phase 2a): invoked by the manual-trigger workflow
 // button on person records. Creates (or links) the Outreach prospect for the person's
 // email — never duplicates — sets the prospect owner from the company's Account Owner,
 // and writes outreachProspectId + the Outreach link back onto the person.
-// Auth: static token (?token= / x-push-token) vs OUTREACH_PUSH_TOKEN app variable
-// (Dialpad mode-B pattern). Needs prospects.all scope on OUTREACH_ACCESS_TOKEN.
+// Caller auth: static token (?token= / x-push-token) vs OUTREACH_PUSH_TOKEN app variable
+// (Dialpad mode-B pattern). Outreach auth refreshes itself on a 401 -- see outreachFetch.
 
 const API = 'https://api.outreach.io/api/v2';
 
@@ -19,8 +20,13 @@ const jsonResponse = (body: unknown, status = 200): Response =>
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
 
-const outreachFetch = async (path: string, init?: RequestInit) => {
-  const token = process.env.OUTREACH_ACCESS_TOKEN;
+// Outreach access tokens live two hours, so a token read from the environment is stale most of
+// the time a rep presses the button. Refresh once on a 401 and retry, the same way outreach-sync
+// does -- without this, Push to Outreach only worked for two hours after each setup run.
+let cachedToken: string | undefined;
+
+const outreachFetch = async (path: string, init?: RequestInit, retried = false): Promise<{ status: number; json: { data?: unknown; errors?: unknown } | null }> => {
+  const token = cachedToken ?? process.env.OUTREACH_ACCESS_TOKEN;
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: {
@@ -29,6 +35,23 @@ const outreachFetch = async (path: string, init?: RequestInit) => {
       ...(init?.headers ?? {}),
     },
   });
+
+  // The refresh writes app variables through the metadata API, which an httpRoute identity is not
+  // always allowed to do. If it throws, fall through to the normal 401 handling rather than
+  // turning a clear message into a 500.
+  if (res.status === 401 && !retried) {
+    try {
+      const fresh = await refreshOutreachToken();
+      if (fresh) {
+        cachedToken = fresh;
+        console.log('outreach-push: token refreshed mid-request, retrying');
+        return outreachFetch(path, init, true);
+      }
+    } catch (error) {
+      console.log(`outreach-push: in-request refresh unavailable (${String(error).slice(0, 120)})`);
+    }
+  }
+
   const json = (await res.json().catch(() => null)) as { data?: unknown; errors?: unknown } | null;
   return { status: res.status, json };
 };
@@ -178,7 +201,7 @@ const handler = async (event: RoutePayload<{ personId?: string }>): Promise<Resp
   const search = await outreachFetch(`/prospects?filter[emails]=${encodeURIComponent(email)}&page[limit]=1`);
   // NOTE: never return 5xx here — Cloudflare replaces 5xx bodies with its own error page.
   // 200 + {error} keeps the message readable; the workflow code-step still fails the run.
-  if (search.status === 401) return jsonResponse({ error: 'Outreach token expired — run scripts/setup-outreach.mjs (refresh cadence)' });
+  if (search.status === 401) return jsonResponse({ error: 'Outreach rejected the integration credentials and an automatic refresh did not help. The refresh token has most likely expired (they last 14 days) — an admin needs to re-authorise Outreach.' });
   const hits = (search.json?.data ?? []) as Array<{ id: number; attributes?: Record<string, unknown> }>;
   if (hits.length > 0) {
     prospectId = String(hits[0].id);

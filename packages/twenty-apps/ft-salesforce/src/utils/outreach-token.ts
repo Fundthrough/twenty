@@ -12,6 +12,20 @@ const REGISTRATION_ID = '0cdeaad6-03e8-456d-ae94-f372b9b2439e';
 
 type VariableRow = { id: string; key: string };
 
+// Access tokens last 7200s. Refreshing at 90 minutes keeps a valid token in the app variables at
+// all times, so the cron is normally the only thing that ever refreshes and the button just finds
+// a working token. That matters because the refresh token rotates on every use: if the cron and a
+// button press both refresh at once, one of them ends up holding a consumed token and the chain
+// breaks, which is the manual re-authorisation we are trying to eliminate.
+const PROACTIVE_REFRESH_AFTER_MS = 90 * 60 * 1000;
+
+export const isOutreachTokenStale = (): boolean => {
+  const refreshedAt = process.env.OUTREACH_TOKEN_REFRESHED_AT;
+  if (!refreshedAt) return true; // never stamped: treat as stale so the first run takes ownership
+  const age = Date.now() - Date.parse(refreshedAt);
+  return Number.isNaN(age) || age > PROACTIVE_REFRESH_AFTER_MS;
+};
+
 export const refreshOutreachToken = async (): Promise<string | undefined> => {
   const clientId = process.env.OUTREACH_CLIENT_ID;
   const clientSecret = process.env.OUTREACH_CLIENT_SECRET;
@@ -58,6 +72,8 @@ export const refreshOutreachToken = async (): Promise<string | undefined> => {
 
   await persist('OUTREACH_ACCESS_TOKEN', tokens.access_token);
   if (tokens.refresh_token) await persist('OUTREACH_REFRESH_TOKEN', tokens.refresh_token);
+  // stamped so the cron can refresh on age rather than waiting for a 401
+  await persist('OUTREACH_TOKEN_REFRESHED_AT', new Date().toISOString());
 
   console.log('outreach-token: refreshed in-workspace');
   return tokens.access_token;

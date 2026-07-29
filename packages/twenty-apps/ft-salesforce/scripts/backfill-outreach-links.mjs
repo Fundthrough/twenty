@@ -10,6 +10,10 @@ import { join } from 'node:path';
 const ENV = process.env.OUTREACH_ENV === 'prod' ? 'prod' : 'dev';
 const outreachTokens = JSON.parse(readFileSync(join(homedir(), `.outreach-tokens-${ENV}.json`), 'utf8'));
 const cfg = JSON.parse(readFileSync(join(homedir(), '.twenty/config.json'), 'utf8')).remotes.sales;
+// Writes from the Outreach integration should carry its own key rather than the admin key,
+// so they are attributable in Twenty. Falls back to the config key when the env var is absent.
+// The workspace guard below then validates whichever key is actually in use.
+if (process.env.OUTREACH_TWENTY_KEY) cfg.apiKey = process.env.OUTREACH_TWENTY_KEY;
 const claim = JSON.parse(Buffer.from(cfg.apiKey.split('.')[1], 'base64url').toString());
 if (claim.workspaceId !== '3ae378c2-3871-4fff-8c69-b4dff2bd5501') { console.error('not sales — abort'); process.exit(1); }
 

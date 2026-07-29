@@ -17,6 +17,10 @@ const SALES_WORKSPACE_ID = '3ae378c2-3871-4fff-8c69-b4dff2bd5501';
 const DRY_RUN = process.env.DRY_RUN === '1';
 
 const cfg = JSON.parse(readFileSync(join(homedir(), '.twenty/config.json'), 'utf8')).remotes.sales;
+// Writes from the Dialpad integration should carry its own key rather than the admin key,
+// so they are attributable in Twenty. Falls back to the config key when the env var is absent.
+// The workspace guard below then validates whichever key is actually in use.
+if (process.env.DIALPAD_TWENTY_KEY) cfg.apiKey = process.env.DIALPAD_TWENTY_KEY;
 const claim = JSON.parse(Buffer.from(cfg.apiKey.split('.')[1], 'base64url').toString());
 if (claim.workspaceId !== SALES_WORKSPACE_ID) {
   console.error('API key is not the sales workspace, aborting');

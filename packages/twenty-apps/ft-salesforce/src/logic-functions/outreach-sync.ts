@@ -1,7 +1,7 @@
 import { CoreApiClient } from 'twenty-client-sdk/core';
 import { defineLogicFunction } from 'twenty-sdk/define';
 import { OUTREACH_SYNC_UID } from 'src/constants/universal-identifiers';
-import { refreshOutreachToken } from 'src/utils/outreach-token';
+import { isOutreachTokenStale, refreshOutreachToken } from 'src/utils/outreach-token';
 
 // Polling transport for Outreach -> Twenty (EE-5069). Webhook deliveries are unusable:
 // Outreach POSTs application/vnd.api+json, which Twenty does not body-parse, so the
@@ -30,6 +30,19 @@ const handler = async () => {
     return { skipped: 'no token' };
   }
   const logOnly = (process.env.OUTREACH_LOG_ONLY ?? '1') !== '0';
+
+  // Refresh on age, not on failure. This cron is the single owner of the rotating refresh token,
+  // so keeping the stored access token young means the Push to Outreach button never has to
+  // refresh mid-request and the two can never rotate concurrently.
+  if (isOutreachTokenStale()) {
+    const fresh = await refreshOutreachToken();
+    if (fresh) {
+      token = fresh;
+      console.log('outreach-sync: token refreshed proactively');
+    } else {
+      console.log('outreach-sync: proactive refresh failed — re-authorisation may be needed');
+    }
+  }
 
   const client = new CoreApiClient();
   const gql = async (query: string, variables?: Record<string, unknown>) => {
