@@ -13,6 +13,7 @@ export const DASHBOARD_PERSON = {
   lastActivityType: 'b621dc3a-13ba-4441-a81c-357dfe33febe',
   createdAt: '11e31107-be74-53e5-ba99-e536c6b73ee6',
   naicsSector: 'f39c8d52-4b71-4e06-8d1a-27b5904ce613',
+  createdBy: '91b4c732-ea34-5593-b217-34d2120da23e',
 } as const;
 
 export const DASHBOARD_COMPANY = {
@@ -21,6 +22,7 @@ export const DASHBOARD_COMPANY = {
   accountOwner: '20202020-95b8-4e10-9881-edb5d4765f9d',
   naicsSector: 'b7e41a09-2d6c-4f18-9a53-06c8f7d21e44',
   accountManager: 'ae0c6b14-95d7-42f8-8c33-1b6d0e7a4f52',
+  createdBy: '6046f5a2-f52b-5c41-95b3-134d95b2cc99',
   createdAt: 'd206d586-fd61-56e1-80a8-9993beb7be0b',
 } as const;
 

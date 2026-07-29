@@ -1,4 +1,4 @@
-import { AggregateOperations, definePageLayoutTab, ObjectRecordGroupByDateGranularity, PageLayoutTabLayoutMode } from 'twenty-sdk/define';
+import { AggregateOperations, definePageLayoutTab, ObjectRecordGroupByDateGranularity, PageLayoutTabLayoutMode, ViewFilterOperand } from 'twenty-sdk/define';
 import {
   AM_DASHBOARD_TAB_COVERAGE_UID,
   AM_DASHBOARD_UID,
@@ -32,6 +32,17 @@ export default definePageLayoutTab({
         label: 'Unowned leads',
         description: 'Departed reps and shared mailboxes. Reported, not solved: redistribution needs a rule.',
         displayDataLabel: true,
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_PERSON.createdBy,
+              operand: ViewFilterOperand.IS,
+              value: '["API"]',
+              type: 'ACTOR',
+              subFieldName: 'source',
+            },
+          ],
+        },
       },
     },
     {
@@ -47,6 +58,17 @@ export default definePageLayoutTab({
         label: 'No activity ever',
         description: 'No call, SMS, email or meeting on record.',
         displayDataLabel: true,
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_PERSON.createdBy,
+              operand: ViewFilterOperand.IS,
+              value: '["API"]',
+              type: 'ACTOR',
+              subFieldName: 'source',
+            },
+          ],
+        },
       },
     },
     {
@@ -66,6 +88,17 @@ export default definePageLayoutTab({
         omitNullValues: true,
         displayLegend: false,
         displayDataLabel: true,
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_PERSON.createdBy,
+              operand: ViewFilterOperand.IS,
+              value: '["API"]',
+              type: 'ACTOR',
+              subFieldName: 'source',
+            },
+          ],
+        },
       },
     },
     {
@@ -88,6 +121,17 @@ export default definePageLayoutTab({
         omitNullValues: false,
         displayLegend: true,
         description: 'Segment with no activity type is the untouched portion of that AM book.',
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_PERSON.createdBy,
+              operand: ViewFilterOperand.IS,
+              value: '["API"]',
+              type: 'ACTOR',
+              subFieldName: 'source',
+            },
+          ],
+        },
       },
     },
     {
@@ -106,6 +150,17 @@ export default definePageLayoutTab({
         omitNullValues: true,
         displayLegend: false,
         description: 'Inferred from credit industry codes. Blank where credit has not classified the business.',
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_PERSON.createdBy,
+              operand: ViewFilterOperand.IS,
+              value: '["API"]',
+              type: 'ACTOR',
+              subFieldName: 'source',
+            },
+          ],
+        },
       },
     },
     {
@@ -123,6 +178,17 @@ export default definePageLayoutTab({
         primaryAxisOrderBy: 'VALUE_DESC',
         omitNullValues: true,
         displayLegend: false,
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_COMPANY.createdBy,
+              operand: ViewFilterOperand.IS,
+              value: '["API"]',
+              type: 'ACTOR',
+              subFieldName: 'source',
+            },
+          ],
+        },
       },
     },
     {
@@ -138,6 +204,17 @@ export default definePageLayoutTab({
         primaryAxisGroupByFieldMetadataUniversalIdentifier: DASHBOARD_PERSON.createdAt,
         primaryAxisDateGranularity: ObjectRecordGroupByDateGranularity.WEEK,
         displayLegend: false,
+        filter: {
+          recordFilters: [
+            {
+              fieldMetadataUniversalIdentifier: DASHBOARD_PERSON.createdBy,
+              operand: ViewFilterOperand.IS,
+              value: '["API"]',
+              type: 'ACTOR',
+              subFieldName: 'source',
+            },
+          ],
+        },
       },
     },
   ],
