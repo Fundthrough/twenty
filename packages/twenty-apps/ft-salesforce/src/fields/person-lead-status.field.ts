@@ -1,10 +1,10 @@
 import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 
-// No defaultValue on purpose. Twenty auto-creates a person for every email and calendar
-// participant and a company for every email domain, so a default here stamps notification
-// senders and meeting rooms as real records -- it is why leadStatus read 96.6% NEW_SIGN_UP and
-// why clientType and accountingSoftware looked fully populated. The importer sets these
-// explicitly from Salesforce; anything it cannot map should stay empty rather than be invented.
+// PROSPECT is the honest starting point: a lead is a prospect until they actually sign up on the
+// FundThrough platform, which is exactly when their company gains a PRO company id
+// (Client__c.PRO_Company_ID__c -> company.companyId). The importer and
+// backfill-lead-status-from-signup.mjs promote PROSPECT to NEW_SIGN_UP on that signal alone, so
+// the status means something rather than being stamped on every record that appears.
 export default defineField({
   universalIdentifier: 'f07f55ea-a597-4028-8985-f67e07230050',
   objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
@@ -26,5 +26,5 @@ export default defineField({
     { id: '9e117e41-2004-4bb8-a74a-a7d2e96ab64d', value: 'RENURTURE', label: "Renurture", position: 9, color: 'gray' },
     { id: '4a255be6-3e1f-479a-aad1-a1548a65604f', value: 'ACTIVATED', label: "Activated", position: 10, color: 'blue' },
   ],
-  defaultValue: null,
+  defaultValue: `'PROSPECT'`,
 });

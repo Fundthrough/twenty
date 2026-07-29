@@ -164,6 +164,15 @@ const naicsSector = (creditCode, industryLabel) => {
   if (fromCode) return fromCode;
   return industryLabel ? valueMaps.naicsSector?.[String(industryLabel).trim()] : undefined;
 };
+// NEW_SIGN_UP means they actually signed up on the FundThrough platform, which is only true once
+// their client record carries a PRO company id. Salesforce hands back "New Sign up" more loosely
+// than that, so every path funnels through here and falls back to PROSPECT. Without it the status
+// is stamped on leads that never signed up and stops distinguishing anything.
+const leadStatusFor = (sfStatus, proCompanyId) => {
+  const mapped = mapSel('person', 'leadStatus', sfStatus);
+  if (mapped === 'NEW_SIGN_UP' && !proCompanyId) return 'PROSPECT';
+  return mapped;
+};
 const errStr = (r) => String(JSON.stringify(r?.errors ?? r) ?? 'no-response').slice(0, 200);
 const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 const normPhone = (raw) => {
@@ -300,6 +309,9 @@ console.log(`  open tasks org-wide: ${tasksOpen.length}`);
 // ---- upsert companies ----
 console.log(DRY ? '\nDRY RUN — no writes' : '\nUpserting companies…');
 let cCreated = 0, cUpdated = 0, cFailed = 0;
+// a lead points at its client through Client_LKP__c; this resolves that to the PRO company id,
+// which is the platform-signup signal leadStatusFor needs
+const clientBySfId = new Map(clients.map((c) => [c.Id, c]));
 const companyTwentyIdBySfClient = new Map();
 const day = (v) => (v ? String(v).slice(0, 10) : undefined);
 // A+B+C fields (Linesh 2026-07-22): pipeline/business/attribution live on COMPANY.
@@ -308,7 +320,7 @@ const leadFieldsForCompany = (l) => {
   if (!l) return {};
   const multi = (l.Do_you_use_any_of_these_invoice_platform__c || '').split(';').map((x) => mapSel('person', 'invoicePlatforms', x.trim())).filter(Boolean);
   return clean({
-    leadStatus: mapSel('person', 'leadStatus', l.Status),
+    leadStatus: mapSel('person', 'leadStatus', l.Status), // caller re-checks against PRO id
     lifecycleStage: l.IsConverted ? 'CONVERTED' : 'LEAD',
     clientType: mapSel('person', 'clientType', l.Type__c),
     accountingSoftware: mapSel('person', 'accountingSoftware', l.Accounting_Software__c),
@@ -429,7 +441,7 @@ for (const l of orderedLeads) {
     phones: normPhone(l.Phone || l.MobilePhone),
     jobTitle: l.Title,
     lifecycleStage: l.IsConverted ? 'CONVERTED' : 'LEAD',
-    leadStatus: mapSel('person', 'leadStatus', l.Status),
+    leadStatus: leadStatusFor(l.Status, l.Client_LKP__c ? clientBySfId.get(l.Client_LKP__c)?.PRO_Company_ID__c : undefined),
     leadSource: mapSel('person', 'leadSource', l.LeadSource),
     industry: mapSel('person', 'industry', l.Industry),
     naicsSector: naicsSector(l.Credit_Industry_Code__c, l.Industry),
