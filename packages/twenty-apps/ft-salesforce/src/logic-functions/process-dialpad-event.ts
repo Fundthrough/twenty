@@ -145,9 +145,45 @@ const handler = async (event: DialpadCallEvent) => {
   }
 
   // ---- resolve the internal handler to a workspace member ----
-  const handlerName = event.target?.name;
+  // A ring-group leg names the queue (target.type "coaching_team"), not a person, so the answerer
+  // has to be fetched: /call/{id} carries operator_call_id, and that call's target is the user
+  // who picked up, with an email. Without this the call lands owned by nobody.
+  let handlerName = event.target?.name;
+  let handlerEmail: string | undefined = event.target?.email || undefined;
+  const dialpadKey = process.env.DIALPAD_API_KEY;
+  if (event.target?.type && event.target.type !== 'user' && dialpadKey && dialpadCallId) {
+    const dp = async (path: string) => {
+      const res = await fetch(`https://dialpad.com/api/v2${path}`, {
+        headers: { Authorization: `Bearer ${dialpadKey}`, Accept: 'application/json' },
+      }).catch(() => null);
+      if (!res?.ok) return undefined;
+      return res.json().catch(() => undefined) as Promise<Record<string, unknown> | undefined>;
+    };
+    const parent = await dp(`/call/${dialpadCallId}`);
+    const legId = parent?.operator_call_id;
+    const leg = legId ? await dp(`/call/${String(legId)}`) : undefined;
+    const legTarget = leg?.target as { email?: string; name?: string; type?: string } | undefined;
+    if (legTarget?.type === 'user' && legTarget.email) {
+      handlerEmail = legTarget.email;
+      handlerName = legTarget.name ?? handlerName;
+      console.log(`ring-group call ${dialpadCallId} answered by ${handlerEmail}`);
+    }
+  }
+
   let handledById: string | undefined;
-  if (handlerName) {
+  if (handlerEmail) {
+    const members = await client.query({
+      workspaceMembers: {
+        __args: { first: 200 },
+        edges: { node: { id: true, userEmail: true } },
+      },
+    }) as { workspaceMembers?: { edges?: Array<{ node: { id: string; userEmail?: string } }> } };
+    const wantedEmail = handlerEmail.trim().toLowerCase();
+    handledById = (members.workspaceMembers?.edges ?? []).find(
+      (e) => e.node.userEmail?.toLowerCase() === wantedEmail,
+    )?.node.id;
+  }
+  if (!handledById && handlerName) {
     const members = await client.query({
       workspaceMembers: {
         __args: { first: 200 },
@@ -194,7 +230,7 @@ const handler = async (event: DialpadCallEvent) => {
     messageText: kind === 'SMS' ? (event.text ?? event.text_content) : undefined,
     durationSeconds,
     externalNumber,
-    dialpadUser: event.target?.name ?? event.target?.email,
+    dialpadUser: handlerName ?? handlerEmail,
     handledById,
     personId: person?.id,
     companyId: person?.companyId ?? undefined,
@@ -202,8 +238,9 @@ const handler = async (event: DialpadCallEvent) => {
     voicemailUrl: event.voicemail_link ? { primaryLinkLabel: 'Voicemail', primaryLinkUrl: event.voicemail_link } : undefined,
     voicemailTranscript: event.transcription_text,
   };
-  // a queue/call-center leg must never overwrite the answering user's name on an existing record
-  if (existingCall && event.target?.type && event.target.type !== 'user') {
+  // A queue leg must never overwrite the answering user's name on an existing record -- unless we
+  // resolved the answerer ourselves from the operator leg, in which case it is the better value.
+  if (existingCall && event.target?.type && event.target.type !== 'user' && !handledById) {
     delete data.dialpadUser;
     delete data.handledById;
   }

@@ -13,6 +13,7 @@ export default defineField({
     { id: 'bd69af09-017e-43b8-ae9c-57746304ab12', value: 'PRO', label: "PRO", position: 1, color: 'green' },
     { id: 'efb6de6a-abdc-48ec-8b24-a26fd2efa332', value: 'VELOCITY', label: "Velocity", position: 2, color: 'turquoise' },
     { id: 'd15288dc-5a01-42b5-b348-ffc4f3e946aa', value: 'PREMIUM', label: "Premium", position: 3, color: 'yellow' },
+    { id: '0acc42cb-a348-4598-8c18-d30785247948', value: 'NETZERO', label: "NetZero", position: 4, color: 'purple' },
   ],
   defaultValue: `'FTX'`,
 });
