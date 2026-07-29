@@ -24,14 +24,24 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
 // self-signed cert (.twenty/tmp-cert/, minted for 3 days; browser shows one warning)
 const REDIRECT_URI = 'https://localhost:53682/callback';
 const CERT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '.twenty', 'tmp-cert');
-// webhooks.all is deliberately absent. Outreach posts webhooks as application/vnd.api+json,
-// which Twenty does not body-parse, so the signature can never be verified and the deliveries are
-// unusable -- the integration polls instead. Requesting a scope we cannot use also made the prod
-// app reject the whole consent with "scope is invalid".
+// Every scope the app declares is available once the Outreach app is PUBLISHED. An unpublished
+// app fails consent with "The requested scope is invalid, unknown, or malformed", which reads like
+// a bad scope list and is not -- that cost a few rounds of guessing during the prod switch.
+//
+// calls.read is left out on the merits, not because it is unavailable: Outreach call syncing was
+// removed because those calls are Dialpad twins of records we already hold, so the scope would
+// grant access we never use. Add it back only if Outreach ever becomes a real call source.
+//
+// webhooks.all is requested and granted. Whether deliveries are usable is a separate question:
+// Outreach signs the raw body and posts application/vnd.api+json, which Twenty does not
+// body-parse, so HMAC verification is impossible. URL-token auth (the pattern outreach-push
+// already uses) solves authentication; whether the payload is readable at all is unsettled, so
+// the integration still polls.
+//
 // Override with OUTREACH_SCOPES if an app is configured for a different set.
 const SCOPES = (process.env.OUTREACH_SCOPES ?? [
   'prospects.read', 'prospects.write', 'accounts.read', 'accounts.write', 'mailings.read', 'sequences.read',
-  'sequenceStates.read', 'calls.read', 'tasks.read', 'users.read',
+  'sequenceStates.read', 'tasks.read', 'users.read', 'webhooks.all',
 ].join(' '));
 const TOKENS_PATH = join(homedir(), `.outreach-tokens-${ENV}.json`);
 
