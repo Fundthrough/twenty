@@ -24,10 +24,15 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
 // self-signed cert (.twenty/tmp-cert/, minted for 3 days; browser shows one warning)
 const REDIRECT_URI = 'https://localhost:53682/callback';
 const CERT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '.twenty', 'tmp-cert');
-const SCOPES = [
+// webhooks.all is deliberately absent. Outreach posts webhooks as application/vnd.api+json,
+// which Twenty does not body-parse, so the signature can never be verified and the deliveries are
+// unusable -- the integration polls instead. Requesting a scope we cannot use also made the prod
+// app reject the whole consent with "scope is invalid".
+// Override with OUTREACH_SCOPES if an app is configured for a different set.
+const SCOPES = (process.env.OUTREACH_SCOPES ?? [
   'prospects.read', 'prospects.write', 'accounts.read', 'accounts.write', 'mailings.read', 'sequences.read',
-  'sequenceStates.read', 'calls.read', 'tasks.read', 'users.read', 'webhooks.all',
-].join(' ');
+  'sequenceStates.read', 'calls.read', 'tasks.read', 'users.read',
+].join(' '));
 const TOKENS_PATH = join(homedir(), `.outreach-tokens-${ENV}.json`);
 
 export const saveTokens = (tokens) => {
@@ -47,6 +52,18 @@ const tokenRequest = async (params) => {
 };
 
 if (process.argv.includes('--refresh')) {
+  // The workspace owns the rotation: outreach-sync refreshes on age and outreach-push on a 401,
+  // both persisting the new pair to the app variables. Refreshing here as well consumes the
+  // refresh token the workspace still holds, and its next refresh then fails -- which is the
+  // manual re-authorisation this whole mechanism exists to avoid. Only use this to recover when
+  // the workspace pair is already broken, and push the result back with
+  // scripts/set-outreach-tokens.mjs immediately afterwards.
+  if (!process.argv.includes('--i-know-this-competes-with-the-workspace')) {
+    console.error('Refusing: the workspace rotates these tokens itself and this would consume its refresh token.');
+    console.error('If the workspace pair is already dead, re-run with --i-know-this-competes-with-the-workspace');
+    console.error('and then immediately push the new pair back into the app variables.');
+    process.exit(1);
+  }
   const stored = JSON.parse(readFileSync(TOKENS_PATH, 'utf8'));
   const fresh = await tokenRequest({ grant_type: 'refresh_token', refresh_token: stored.refresh_token });
   saveTokens(fresh);
