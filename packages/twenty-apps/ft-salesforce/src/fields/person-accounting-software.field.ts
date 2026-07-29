@@ -1,5 +1,10 @@
 import { defineField, FieldType, STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';
 
+// No defaultValue on purpose. Twenty auto-creates a person for every email and calendar
+// participant and a company for every email domain, so a default here stamps notification
+// senders and meeting rooms as real records -- it is why leadStatus read 96.6% NEW_SIGN_UP and
+// why clientType and accountingSoftware looked fully populated. The importer sets these
+// explicitly from Salesforce; anything it cannot map should stay empty rather than be invented.
 export default defineField({
   universalIdentifier: '37a10114-6569-460e-a812-15cdbd75cc7d',
   objectUniversalIdentifier: STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
@@ -37,5 +42,5 @@ export default defineField({
     { id: '80cc914d-350e-4426-8b01-85912545de8c', value: 'BUSY_ACCOUNTING', label: "Busy Accounting", position: 25, color: 'red' },
     { id: '92fe82a5-e4f7-4cc7-9936-061f1f416d97', value: 'OTHER', label: "Other", position: 26, color: 'purple' },
   ],
-  defaultValue: `'NOT_CONNECTED'`,
+  defaultValue: null,
 });
