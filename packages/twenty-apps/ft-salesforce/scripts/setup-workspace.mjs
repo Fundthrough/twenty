@@ -118,26 +118,71 @@ for (const plan of PLANS) {
   console.log(`${plan.obj}: group "${plan.group}" — ${created} created, ${moved} grouped, ${hidden} hidden`);
 }
 
-// ---- 2. Lead Pipeline kanban viewGroups ----
-const pipeline = views.find((v) => v.name === 'Lead Pipeline');
-if (pipeline) {
-  const vg = (await gql('query V($id: String!) { getView(id: $id) { viewGroups { fieldValue } } }', { id: pipeline.id })).data.getView.viewGroups;
-  const have = new Set(vg.map((g) => g.fieldValue));
-  const options = objects.person.fieldsList.find((f) => f.name === 'leadStatus')?.options ?? [];
-  let made = 0;
+// ---- 2. Kanban viewGroups ----
+// A kanban renders an empty board from mainGroupByFieldMetadataUniversalIdentifier alone: the
+// columns are viewGroups, which a view definition cannot express. So they are asserted here.
+//
+// Pruning matters as much as creating. "Company Leads" was found grouping by company.leadStatus
+// while holding 19 columns of company.accountType values (CUSTOMER, COMPETITOR, PAYOR,
+// ACCOUNTANT…). Only PROSPECT overlapped, so every other card had no column and the board looked
+// broken. Any group whose value is not a current option of the group-by field is now removed.
+const syncKanbanGroups = async (viewName, objectName, fieldName) => {
+  const view = views.find((v) => v.name === viewName && v.objectMetadataId === objects[objectName].id);
+  if (!view) { console.log(`${viewName}: view not found, skipping columns`); return; }
+  const field = objects[objectName].fieldsList.find((f) => f.name === fieldName);
+  const options = field?.options ?? [];
+
+  // `twenty apply` renames a source view but does NOT change the type of one that already exists.
+  // That is how this board ended up a TABLE while company-pipeline.view.ts declared KANBAN: the
+  // nav opened a table with no columns. Assert type and group-by here every run.
+  if (view.type !== 'KANBAN' || view.mainGroupByFieldMetadataId !== field?.id) {
+    await gql('mutation U($id: String!, $input: UpdateViewInput!) { updateView(id: $id, input: $input) { id } }',
+      { id: view.id, input: { type: 'KANBAN', mainGroupByFieldMetadataId: field.id } });
+    console.log(`${viewName}: forced back to KANBAN grouped by ${objectName}.${fieldName}`);
+    await sleep(650);
+  }
+  const valid = new Set(options.map((o) => o.value));
+  const existing = (await gql('query V($id: String!) { getView(id: $id) { viewGroups { id fieldValue position isVisible } } }',
+    { id: view.id })).data.getView.viewGroups ?? [];
+
+  let removed = 0;
+  for (const g of existing) {
+    // the blank group is deliberate: it collects records with no status
+    if (g.fieldValue === '' || valid.has(g.fieldValue)) continue;
+    await gql('mutation D($id: UUID!) { destroyViewGroup(id: $id) { id } }', { id: g.id });
+    removed++; await sleep(400);
+  }
+
+  const have = new Map(existing.filter((g) => valid.has(g.fieldValue) || g.fieldValue === '').map((g) => [g.fieldValue, g]));
+  let made = 0, moved = 0;
   for (const o of [...options].sort((a, b) => a.position - b.position)) {
-    if (have.has(o.value)) continue;
-    await gql('mutation G($input: CreateViewGroupInput!) { createViewGroup(input: $input) { id } }',
-      { input: { viewId: pipeline.id, fieldValue: o.value, isVisible: true, position: o.position } });
-    made++; await sleep(650);
+    const current = have.get(o.value);
+    if (!current) {
+      await gql('mutation G($input: CreateViewGroupInput!) { createViewGroup(input: $input) { id } }',
+        { input: { viewId: view.id, fieldValue: o.value, isVisible: true, position: o.position } });
+      made++; await sleep(650);
+      continue;
+    }
+    if (current.position !== o.position || current.isVisible !== true) {
+      await gql('mutation U($input: UpdateViewGroupInput!) { updateViewGroup(input: $input) { id } }',
+        { input: { id: current.id, update: { position: o.position, isVisible: true } } });
+      moved++; await sleep(400);
+    }
   }
   if (!have.has('')) {
     await gql('mutation G($input: CreateViewGroupInput!) { createViewGroup(input: $input) { id } }',
-      { input: { viewId: pipeline.id, fieldValue: '', isVisible: false, position: options.length } });
-    made++;
+      { input: { viewId: view.id, fieldValue: '', isVisible: false, position: options.length } });
+    made++; await sleep(400);
   }
-  console.log(`Lead Pipeline: ${made} kanban columns created`);
-}
+
+  // empty stages are noise on a board this wide — 11 columns with only a handful in use
+  await gql('mutation U($id: String!, $input: UpdateViewInput!) { updateView(id: $id, input: $input) { id } }',
+    { id: view.id, input: { shouldHideEmptyGroups: true } });
+
+  console.log(`${viewName}: ${made} columns created, ${moved} re-ordered, ${removed} stale removed, empty groups hidden`);
+};
+
+await syncKanbanGroups('Company Leads', 'company', 'leadStatus');
 
 // ---- 3. Company layout: Company Profile tab (status banner + full-height Flow iframe) + Term Sheets panel ----
 // GOTCHAS (hard-won, see docs/DATA-MODEL.md):
@@ -291,7 +336,9 @@ if (call) {
   }
 
   // 7b. Leads-first order; first item is also the login landing page
-  const pipelineNav = topLevel.find((n) => n.type === 'VIEW' && n.viewId === pipeline?.id);
+  // the Leads nav points at the company kanban (see 8a); it leads the order and is the landing page
+  const leadsKanbanId = views.find((v) => v.name === 'Company Leads' && v.type === 'KANBAN')?.id;
+  const pipelineNav = topLevel.find((n) => n.type === 'VIEW' && n.viewId === leadsKanbanId);
   const keeper = (objName) => navByObject[objects[objName]?.id]?.[0];
   const desiredOrder = [
     [pipelineNav, 0], [keeper('company'), 1], [keeper('person'), 2], [keeper('call'), 3],
@@ -587,27 +634,10 @@ if (call) {
 // nav is workspace-owned (sync can't resolve same-manifest view references) ----
 {
   const views8a = (await gql('{ getViews { id name type objectMetadataId isActive } }')).data.getViews;
-  const leadsKanban = views8a.find((v) => v.name === 'Leads' && v.type === 'KANBAN' && v.objectMetadataId === objects.company.id && v.isActive !== false);
-  if (!leadsKanban) console.log('source Leads kanban not found - sync the app first');
+  const leadsKanban = views8a.find((v) => v.name === 'Company Leads' && v.type === 'KANBAN' && v.objectMetadataId === objects.company.id && v.isActive !== false);
+  if (!leadsKanban) console.log('source "Company Leads" kanban not found - sync the app first');
   else {
-    // kanban columns: one viewGroup per leadStatus option (+ hidden empty) — source views
-    // don't auto-generate groups, and a group-less kanban renders empty
-    const vg8a = (await gql('query V($id: String!) { getView(id: $id) { viewGroups { fieldValue } } }', { id: leadsKanban.id })).data.getView.viewGroups;
-    const have8a = new Set(vg8a.map((g) => g.fieldValue));
-    const opts8a = objects.company.fieldsList.find((f) => f.name === 'leadStatus')?.options ?? [];
-    let made8a = 0;
-    for (const o of [...opts8a].sort((a, b) => a.position - b.position)) {
-      if (have8a.has(o.value)) continue;
-      await gql('mutation G($input: CreateViewGroupInput!) { createViewGroup(input: $input) { id } }',
-        { input: { viewId: leadsKanban.id, fieldValue: o.value, isVisible: true, position: o.position } });
-      made8a++; await sleep(650);
-    }
-    if (!have8a.has('')) {
-      await gql('mutation G($input: CreateViewGroupInput!) { createViewGroup(input: $input) { id } }',
-        { input: { viewId: leadsKanban.id, fieldValue: '', isVisible: false, position: opts8a.length } });
-      made8a++;
-    }
-    if (made8a) console.log('company kanban columns created: ' + made8a);
+    // columns are handled by syncKanbanGroups in section 2, which also prunes stale groups
     const navs8a = (await gql('{ navigationMenuItems { id type viewId folderId } }')).data.navigationMenuItems.filter((n) => !n.folderId);
     for (const n of navs8a.filter((x) => x.type === 'VIEW' && x.viewId !== leadsKanban.id)) {
       await gql('mutation { deleteNavigationMenuItem(id: "' + n.id + '") { id } }');
