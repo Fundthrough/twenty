@@ -1,0 +1,26 @@
+{
+  "startedAt": "2026-07-21T14:03:41.826Z",
+  "dryRun": false,
+  "batchLimit": 25,
+  "companies": {
+    "created": 0,
+    "updated": 25,
+    "failed": 0
+  },
+  "people": {
+    "created": 0,
+    "updated": 50,
+    "failed": 0,
+    "linkedToCompany": 25
+  },
+  "tasks": {
+    "created": 0,
+    "skippedExisting": 7,
+    "failed": 0,
+    "scoped": 7
+  },
+  "errors": [],
+  "finishedAt": "2026-07-21T14:05:18.141Z",
+  "junkExcludedCount": 2393,
+  "recordsRedacted": "Per-record entries removed: they carried customer names, ids or emails. Counts and reason breakdowns are preserved."
+}

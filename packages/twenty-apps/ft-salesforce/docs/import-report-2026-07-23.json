@@ -1,0 +1,42 @@
+{
+  "startedAt": "2026-07-23T14:21:18.614Z",
+  "dryRun": false,
+  "batchLimit": null,
+  "companies": {
+    "created": 0,
+    "updated": 3423,
+    "failed": 28
+  },
+  "people": {
+    "created": 5752,
+    "updated": 960,
+    "failed": 842,
+    "linkedToCompany": 7255
+  },
+  "tasks": {
+    "created": 11,
+    "skippedExisting": 0,
+    "failed": 0,
+    "scoped": 11
+  },
+  "junkExcluded": [],
+  "spawnedCompanies": {
+    "created": 1959,
+    "failed": 149,
+    "leadsWithoutCompanyName": 122
+  },
+  "materializedContacts": {
+    "created": 10,
+    "skipped": 66
+  },
+  "finishedAt": "2026-07-23T18:43:31.432Z",
+  "errorsCount": 3393,
+  "errorsSummary": {
+    "materialize: A duplicate entry was detected": 3375,
+    "person: A duplicate entry was detected": 8,
+    "spawn: A duplicate entry was detected": 5,
+    "company: A duplicate entry was detected": 4,
+    "company: The URL of the link is not valid (INVALID_URL)": 1
+  },
+  "recordsRedacted": "Per-record entries removed: they carried customer names, ids or emails. Counts and reason breakdowns are preserved."
+}

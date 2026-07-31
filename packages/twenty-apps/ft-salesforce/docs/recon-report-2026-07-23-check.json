@@ -1,0 +1,55 @@
+{
+  "at": "2026-07-23T18:51:27.563Z",
+  "applied": false,
+  "companies": {
+    "checked": 5494,
+    "needingFill": 1677,
+    "filled": 0,
+    "fieldGaps": {
+      "leadStatus": 307,
+      "renurtureReason": 911,
+      "companyId": 1037,
+      "clientId": 1038,
+      "sfClientId": 1037,
+      "applicationStatus": 1036,
+      "referringPartner": 1070,
+      "address": 1401,
+      "renurtureReasonOther": 299,
+      "disqualifiedReasonOther": 95,
+      "lostReasonsOther": 67,
+      "sfAccountId": 7,
+      "description": 2,
+      "lifecycleStage": 40,
+      "hotList": 40,
+      "invoicePlatforms": 19,
+      "doYouInvoiceBusinesses": 19,
+      "accountNotes": 29,
+      "leadSource": 41,
+      "howDidYouHearAboutUs": 18,
+      "renurtureDate": 15,
+      "industry": 4,
+      "desiredFundingAmount": 5,
+      "lostReason": 8,
+      "disqualifiedReason": 10,
+      "domainName": 5,
+      "primaryPartnerAffiliation": 1,
+      "howQuicklyDoYouNeedTheMoney": 10,
+      "sfOwnerEmail": 1
+    }
+  },
+  "people": {
+    "checked": 6644,
+    "needingFill": 8,
+    "filled": 0,
+    "fieldGaps": {
+      "doNotCall": 7,
+      "sfOwnerEmail": 7,
+      "emails": 1,
+      "jobTitle": 3
+    }
+  },
+  "errors": [],
+  "unmatchedSpawnsCount": 9,
+  "fundedMissingCount": 519,
+  "recordsRedacted": "Per-record entries removed: they carried customer names, ids or emails. Counts and reason breakdowns are preserved."
+}

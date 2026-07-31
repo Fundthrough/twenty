@@ -8,4 +8,11 @@
 # SDK build output + local certs live under .twenty/
 .twenty/
 
+# customer data — never commit. Reports carry counts and histograms, never per-record
+# entries (scripts/redact-report.mjs enforces this). Raw exports stay local.
+docs/deleted-*.json
+docs/*-export-*.json
+docs/*-dump-*.json
+scripts/data/*.csv
+
 node_modules/

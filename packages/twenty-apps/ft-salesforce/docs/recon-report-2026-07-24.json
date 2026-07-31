@@ -1,0 +1,60 @@
+{
+  "at": "2026-07-24T14:30:48.164Z",
+  "applied": true,
+  "companies": {
+    "checked": 5533,
+    "needingFill": 1717,
+    "filled": 1714,
+    "fieldGaps": {
+      "leadStatus": 307,
+      "renurtureReason": 930,
+      "companyId": 1076,
+      "clientId": 1077,
+      "sfClientId": 1076,
+      "applicationStatus": 1075,
+      "referringPartner": 1108,
+      "address": 1407,
+      "renurtureReasonOther": 306,
+      "lifecycleStage": 79,
+      "invoicePlatforms": 35,
+      "doYouInvoiceBusinesses": 35,
+      "howDidYouHearAboutUs": 34,
+      "hotList": 79,
+      "lostReason": 13,
+      "lostReasonsOther": 71,
+      "sfOwnerEmail": 40,
+      "disqualifiedReasonOther": 101,
+      "howQuicklyDoYouNeedTheMoney": 23,
+      "accountNotes": 32,
+      "leadSource": 55,
+      "sfAccountId": 14,
+      "description": 8,
+      "disqualifiedReason": 16,
+      "renurtureDate": 19,
+      "desiredFundingAmount": 11,
+      "industry": 6,
+      "domainName": 5,
+      "primaryPartnerAffiliation": 1,
+      "churnDate": 1,
+      "churnReason": 1
+    }
+  },
+  "people": {
+    "checked": 6644,
+    "needingFill": 8,
+    "filled": 7,
+    "fieldGaps": {
+      "doNotCall": 7,
+      "sfOwnerEmail": 7,
+      "emails": 1,
+      "jobTitle": 3
+    }
+  },
+  "unmatchedSpawnsCount": 959,
+  "fundedMissingCount": 519,
+  "errorsCount": 3,
+  "errorsSummary": {
+    "company: A duplicate entry was detected": 3
+  },
+  "recordsRedacted": "Per-record entries removed: they carried customer names, ids or emails. Counts and reason breakdowns are preserved."
+}
