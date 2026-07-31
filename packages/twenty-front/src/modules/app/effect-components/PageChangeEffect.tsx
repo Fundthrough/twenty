@@ -10,6 +10,7 @@ import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
 import { CoreObjectNamePlural } from '@/object-metadata/types/CoreObjectNamePlural';
+import { shouldOpenAiChatAfterOnboardingState } from '@/onboarding/states/shouldOpenAiChatAfterOnboardingState';
 import { useActiveRecordBoardCard } from '@/object-record/record-board/hooks/useActiveRecordBoardCard';
 import { useFocusedRecordBoardCard } from '@/object-record/record-board/hooks/useFocusedRecordBoardCard';
 import { useResetRecordBoardSelection } from '@/object-record/record-board/hooks/useResetRecordBoardSelection';
@@ -18,6 +19,7 @@ import { useResetTableRowSelection } from '@/object-record/record-table/hooks/in
 import { useActiveRecordTableRow } from '@/object-record/record-table/hooks/useActiveRecordTableRow';
 import { useFocusedRecordTableRow } from '@/object-record/record-table/hooks/useFocusedRecordTableRow';
 import { useOpenNewRecordTitleCell } from '@/object-record/record-title-cell/hooks/useOpenNewRecordTitleCell';
+import { newRecordTitleCellToOpenState } from '@/object-record/record-title-cell/states/newRecordTitleCellToOpenState';
 import { getRecordIndexIdFromObjectNamePluralAndViewId } from '@/object-record/utils/getRecordIndexIdFromObjectNamePluralAndViewId';
 import { PageFocusId } from '@/types/PageFocusId';
 import { useResetFocusStackToFocusItem } from '@/ui/utilities/focus/hooks/useResetFocusStackToFocusItem';
@@ -157,6 +159,13 @@ export const PageChangeEffect = () => {
       if (consumedReturnToPath) {
         clearReturnToPath();
       }
+
+      if (
+        store.get(shouldOpenAiChatAfterOnboardingState.atom) &&
+        pageChangeEffectNavigateLocation !== AppPath.WorkspaceSetup
+      ) {
+        store.set(shouldOpenAiChatAfterOnboardingState.atom, false);
+      }
     }
   }, [
     navigate,
@@ -166,6 +175,7 @@ export const PageChangeEffect = () => {
     saveReturnToPath,
     getReturnToPath,
     clearReturnToPath,
+    store,
   ]);
 
   useEffect(() => {
@@ -197,7 +207,6 @@ export const PageChangeEffect = () => {
         break;
       }
       case isMatchingLocation(location, AppPath.RecordShowPage): {
-        const isNewRecord = location.state?.isNewRecord === true;
         const isSidePanelOpen = store.get(isSidePanelOpenedState.atom);
 
         if (!isSidePanelOpen) {
@@ -216,14 +225,21 @@ export const PageChangeEffect = () => {
           });
         }
 
-        if (
-          isNewRecord &&
-          isDefined(location.state?.labelIdentifierFieldName)
-        ) {
-          openNewRecordTitleCell({
-            recordId: location.state.objectRecordId,
-            fieldName: location.state.labelIdentifierFieldName,
-          });
+        const newRecordTitleCellToOpen = store.get(
+          newRecordTitleCellToOpenState.atom,
+        );
+
+        if (isDefined(newRecordTitleCellToOpen)) {
+          const objectRecordIdFromPath = matchPath(
+            AppPath.RecordShowPage,
+            location.pathname,
+          )?.params.objectRecordId;
+
+          if (newRecordTitleCellToOpen.recordId === objectRecordIdFromPath) {
+            openNewRecordTitleCell(newRecordTitleCellToOpen);
+          }
+
+          store.set(newRecordTitleCellToOpenState.atom, null);
         }
         break;
       }
