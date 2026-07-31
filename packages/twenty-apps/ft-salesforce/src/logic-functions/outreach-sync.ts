@@ -21,7 +21,24 @@ type OutreachRow = {
   relationships?: Record<string, { data?: { id?: number | string } | null }>;
 };
 
-type PersonRef = { id: string; companyId?: string | null };
+// Outreach action -> Twenty taskType. Anything without an equivalent (linkedin, action_item,
+// generic steps) lands on OTHER rather than being dropped.
+const TASK_TYPE_BY_ACTION: Record<string, string> = {
+  call: 'CALL',
+  meeting: 'MEETING',
+  demo: 'MEETING',
+  email: 'EMAIL',
+};
+// Outreach sends snake_case actions ("action_item") and its sequence names often carry
+// trailing whitespace, both of which end up in the task title reps read.
+const humanizeAction = (action: string): string =>
+  action
+    ? action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : 'Task';
+
+type PersonRef = { id: string; companyId?: string | null; ownerId?: string | null;
+  name?: { firstName?: string | null; lastName?: string | null };
+  company?: { name?: string | null } | null };
 
 const handler = async () => {
   let token = process.env.OUTREACH_ACCESS_TOKEN;
@@ -81,7 +98,7 @@ const handler = async () => {
     if (personCache.has(prospectId)) return personCache.get(prospectId) ?? undefined;
 
     const byId = await gql(
-      `query P($pid: String!) { people(filter: { outreachProspectId: { eq: $pid } }, first: 1) { edges { node { id companyId } } } }`,
+      `query P($pid: String!) { people(filter: { outreachProspectId: { eq: $pid } }, first: 1) { edges { node { id companyId ownerId name { firstName lastName } company { name } } } } }`,
       { pid: prospectId },
     ) as { people?: { edges?: Array<{ node: PersonRef }> } } | undefined;
     let person = byId?.people?.edges?.[0]?.node;
@@ -145,7 +162,7 @@ const handler = async () => {
     if (!sequenceId) return undefined;
     if (sequenceNameCache.has(sequenceId)) return sequenceNameCache.get(sequenceId);
     const seq = await outreach(`/sequences/${sequenceId}`);
-    const name = ((seq?.data as OutreachRow | undefined)?.attributes as { name?: string } | undefined)?.name;
+    const name = ((seq?.data as OutreachRow | undefined)?.attributes as { name?: string } | undefined)?.name?.trim() || undefined;
     sequenceNameCache.set(sequenceId, name);
     return name;
   };
@@ -172,14 +189,37 @@ const handler = async () => {
       const a = row.attributes ?? {};
       const seq = await sequenceName(relId(row, 'sequence'));
       const action = String(a.action ?? 'task');
+      const who = [person.name?.firstName, person.name?.lastName].filter(Boolean).join(' ').trim();
+      const dueAt = typeof a.dueAt === 'string' ? a.dueAt : null;
+
+      // A rep should be able to act on the task without opening Outreach, so the body carries who,
+      // where and why, plus a link back. Outreach's own note/subject are included when present but
+      // never relied on -- most sequence-generated tasks have neither.
+      const note = [a.note, a.subject, a.body].map((v) => (typeof v === 'string' ? v.trim() : '')).find(Boolean);
+      const details = [
+        `**${humanizeAction(action)}** from Outreach${seq ? ` sequence _${seq}_` : ''}`,
+        '',
+        who ? `- Prospect: ${who}` : undefined,
+        person.company?.name ? `- Company: ${person.company.name}` : undefined,
+        dueAt ? `- Due: ${dueAt.slice(0, 10)}` : '- Due: not set in Outreach',
+        a.completedAt ? `- Completed in Outreach: ${String(a.completedAt).slice(0, 10)}` : undefined,
+        prospectId ? `- Outreach prospect: https://web.outreach.io/prospects/${prospectId}/overview` : undefined,
+        note ? `\n${note}` : undefined,
+        '',
+        '_Created by the Outreach sync. Completing it here does not complete it in Outreach._',
+      ].filter((line) => line !== undefined).join('\n');
+
       const data: Record<string, unknown> = {
-        title: seq ? `Outreach ${action}: ${seq}` : `Outreach ${action}`,
+        title: who ? `${humanizeAction(action)} ${who}${seq ? ` — ${seq}` : ''}` : `${humanizeAction(action)} (unnamed prospect)${seq ? ` — ${seq}` : ''}`,
+        bodyV2: { markdown: details },
         outreachTaskId: String(row.id),
         status: a.completedAt ? 'DONE' : 'TODO',
-        dueAt: typeof a.dueAt === 'string' ? a.dueAt : null,
-        taskType: String(a.action ?? '').toLowerCase() === 'call' ? 'CALL' : 'OTHER',
+        dueAt,
+        taskType: TASK_TYPE_BY_ACTION[String(a.action ?? '').toLowerCase()] ?? 'OTHER',
       };
-      const assigneeId = await findAssignee(relId(row, 'owner'));
+      // Outreach owner first; fall back to whoever owns the lead in Twenty, because an unassigned
+      // task shows up in nobody's list and is effectively invisible
+      const assigneeId = (await findAssignee(relId(row, 'owner'))) ?? person.ownerId ?? undefined;
       if (assigneeId) data.assigneeId = assigneeId;
 
       const existing = await gql(
